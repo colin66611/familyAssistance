@@ -90,7 +90,7 @@ function OrderPage() {
             width: 180,
             render: (_, data) => {
                 const status:{ [key: string]: { [key: string]: string } } = {
-                    WAIT_BUYER_PAY: {
+                    TRADE_AWAIT: {
                         color: 'orange',
                         text: '等待支付'
                     },
@@ -107,9 +107,7 @@ function OrderPage() {
                         text: '订单完毕'
                     }
                 }
-                const color = status[data.trade_status].color || 'red'
-                const text = status[data.trade_status].text || data.trade_status || '数据异常'
-                return <Tag color={color}>{text}</Tag>
+                return <Tag color={status[data.trade_status].color}>{status[data.trade_status].text}</Tag>
             }
         },
         {
@@ -185,7 +183,7 @@ function OrderPage() {
         //             key="edit"
         //             type="link"
         //             onClick={() => {
-        //                 setEditInfoModal(() => {
+        //                 setEdidInfoModal(() => {
         //                     form?.setFieldsValue({
         //                         ...data
         //                     });

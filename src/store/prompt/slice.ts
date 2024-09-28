@@ -4,15 +4,15 @@ import { PromptInfo } from '@/types';
 import promptszh from '@/assets/prompts-zh.json';
 
 export interface PromptState {
-  // 本地AI提示指令
+  // 本地角色
   localPrompt: Array<PromptInfo>;
-  // 新增AI提示指令
+  // 新增角色
   addPrompts: (list: Array<PromptInfo>) => void;
-  // 清除所有AI提示指令
+  // 清除所有角色
   clearPrompts: () => void;
-  // 删除单个AI提示指令
+  // 删除单个角色
   delPrompt: (info: PromptInfo) => void;
-  // 编辑AI提示指令信息
+  // 编辑角色信息
   editPrompt: (oldKey: string, info: PromptInfo) => void;
 }
 

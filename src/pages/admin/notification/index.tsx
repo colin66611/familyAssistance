@@ -18,7 +18,7 @@ function NotificationPage() {
   const [configs, setConfigs] = useState<Array<ConfigInfo>>([])
   const tableActionRef = useRef<ActionType>()
 
-  const [edidInfoModal, setEditInfoModal] = useState<{
+  const [edidInfoModal, setEdidInfoModal] = useState<{
     open: boolean
     info: NotificationInfo | undefined
   }>({
@@ -38,6 +38,21 @@ function NotificationPage() {
     content: ''
   })
 
+  function getConfigValue(key: string, data: Array<ConfigInfo>) {
+    const value = data.filter((c) => c.name === key)[0]
+    return value
+  }
+
+  function onGetConfigs (){
+	getAdminConfig().then((res)=>{
+		if(res.code) return
+		setConfigs(res.data)
+	})
+  }
+
+  useEffect(() => {
+    onGetConfigs()
+  }, [])
 
   const columns: ProColumns<NotificationInfo>[] = [
     {
@@ -66,7 +81,7 @@ function NotificationPage() {
       dataIndex: 'status',
       width: 100,
       render: (_, data) => (
-        <Tag color={data.status ? 'green' : 'red'}>{data.status ? '上线' : '下线'}</Tag>
+        <Tag color={data.status ? 'green' : 'red'}>{data.status ? '正常' : '异常'}</Tag>
       )
     },
     {
@@ -89,7 +104,7 @@ function NotificationPage() {
           key="edit"
           type="link"
           onClick={() => {
-            setEditInfoModal(() => {
+            setEdidInfoModal(() => {
               return {
                 open: true,
                 info: data
@@ -146,7 +161,7 @@ function NotificationPage() {
               type="primary"
               size="small"
               onClick={() => {
-                setEditInfoModal(() => {
+                setEdidInfoModal(() => {
                   return {
                     open: true,
                     info: {
@@ -163,11 +178,44 @@ function NotificationPage() {
             </Button>
           ]
         }}
+        headerTitle={(
+          <Space key="space">
+            <Button
+              key="shop"
+              type="default"
+              onClick={() => {
+				const shopIntroduce = getConfigValue('shop_introduce',configs)
+                setEdidContentModal({
+                  open: true,
+                  key: 'shop_introduce',
+                  content: shopIntroduce.value,
+                  title: '商城说明'
+                })
+              }}
+            >
+              修改商城说明
+            </Button>
+            <Button
+              key="user"
+              type="default"
+              onClick={() => {
+				const userIntroduce = getConfigValue('user_introduce',configs)
+                setEdidContentModal({
+                  open: true,
+                  key: 'user_introduce',
+                  content: userIntroduce.value,
+                  title: '用户中心说明'
+                })
+              }}
+            >
+              修改用户中心说明
+            </Button>
+          </Space>
+        )}
         rowKey="id"
         search={false}
         bordered
       />
-
       <Modal
         title="通知信息"
         destroyOnClose
@@ -183,7 +231,7 @@ function NotificationPage() {
             // 编辑
             putAdminNotification(edidInfoModal.info).then((res) => {
               if (res.code) return
-              setEditInfoModal(() => {
+              setEdidInfoModal(() => {
                 return {
                   open: false,
                   info: {
@@ -204,7 +252,7 @@ function NotificationPage() {
               sort
             } as any).then((res) => {
               if (res.code) return
-              setEditInfoModal(() => {
+              setEdidInfoModal(() => {
                 return {
                   open: false,
                   info: {
@@ -220,7 +268,7 @@ function NotificationPage() {
           }
         }}
         onCancel={() => {
-          setEditInfoModal({ open: false, info: undefined })
+          setEdidInfoModal({ open: false, info: undefined })
         }}
       >
         <Space direction="vertical" style={{ width: '100%' }}>
@@ -230,7 +278,7 @@ function NotificationPage() {
                 value={edidInfoModal.info?.title}
                 placeholder="通知标题"
                 onChange={(e) => {
-                  setEditInfoModal((editInfo) => {
+                  setEdidInfoModal((editInfo) => {
                     const info = { ...editInfo.info, title: e.target.value }
                     return {
                       ...editInfo,
@@ -248,7 +296,7 @@ function NotificationPage() {
                 value={edidInfoModal.info?.sort}
                 placeholder="排序"
                 onChange={(value) => {
-                  setEditInfoModal((editInfo) => {
+                  setEdidInfoModal((editInfo) => {
                     const info = { ...editInfo.info, sort: value }
                     return {
                       ...editInfo,
@@ -261,7 +309,7 @@ function NotificationPage() {
             <FormCard title="状态">
               <Radio.Group
                 onChange={(e) => {
-                  setEditInfoModal((editInfo) => {
+                  setEdidInfoModal((editInfo) => {
                     const info = { ...editInfo.info, status: e.target.value }
                     return {
                       ...editInfo,
@@ -273,7 +321,7 @@ function NotificationPage() {
                 value={edidInfoModal.info?.status}
               >
                 <Radio.Button value={1}>上线</Radio.Button>
-                <Radio.Button value={0}>下线</Radio.Button>
+                <Radio.Button value={2}>下线</Radio.Button>
               </Radio.Group>
             </FormCard>
           </Space>
@@ -281,7 +329,7 @@ function NotificationPage() {
             <RichEdit
               value={edidInfoModal.info?.content}
               onChange={(value) => {
-                setEditInfoModal((editInfo) => {
+                setEdidInfoModal((editInfo) => {
                   const info = { ...editInfo.info, content: value }
                   return {
                     ...editInfo,
@@ -292,6 +340,48 @@ function NotificationPage() {
             />
           </FormCard>
         </Space>
+      </Modal>
+      <Modal
+        width={600}
+        open={edidContentModal.open}
+        onOk={() => {
+			putAdminConfig({
+				[edidContentModal.key]: edidContentModal.content
+			}).then((res) => {
+				if (res.code) {
+				  message.error('保存失败')
+				  return
+				}
+				setEdidContentModal({
+					open: false,
+					title: '',
+					content: '',
+					key: ''
+				})
+				message.success('保存成功')
+				onGetConfigs()
+			})
+        }}
+        onCancel={() => {
+          setEdidContentModal({
+            open: false,
+            content: '',
+            key: ''
+          })
+        }}
+        title={edidContentModal.title}
+      >
+        <RichEdit
+          value={edidContentModal?.content}
+          onChange={(value) => {
+            setEdidContentModal((editInfo) => {
+              return {
+                ...editInfo,
+                content: value
+              }
+            })
+          }}
+        />
       </Modal>
     </div>
   )

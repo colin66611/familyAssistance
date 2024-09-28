@@ -12,7 +12,7 @@ import {
   UserOutlined,
   WalletOutlined
 } from '@ant-design/icons'
-import { chatStore, userStore } from '@/store'
+import { userStore } from '@/store'
 import { Avatar, Button, Dropdown } from 'antd'
 import { getEmailPre } from '@/utils'
 import MenuList from '../MenuList'
@@ -23,7 +23,6 @@ function HeaderRender(props: HeaderViewProps, defaultDom: React.ReactNode) {
   const navigate = useNavigate()
 
   const { token, user_info, logout, setLoginModal } = userStore()
-  const { clearChats } = chatStore()
 
   const renderLogo = useMemo(() => {
     if (typeof props.logo === 'string') return <img src={props.logo} />
@@ -117,7 +116,6 @@ function HeaderRender(props: HeaderViewProps, defaultDom: React.ReactNode) {
                     label: '退出登录',
                     onClick: () => {
                       logout()
-					  clearChats()
                       navigate('/login')
                     }
                   }

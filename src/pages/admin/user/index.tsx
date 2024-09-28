@@ -1,12 +1,11 @@
 import UserHead from '@/components/UserHead'
-import { delAdminUsers, getAdminUsers, postAdminUser, putAdminUsers } from '@/request/adminApi'
+import { delAdminUsers, getAdminUsers, putAdminUsers } from '@/request/adminApi'
 import { UserInfo } from '@/types/admin'
 import {
   ActionType,
   ModalForm,
   ProColumns,
   ProFormDatePicker,
-  ProFormDateTimePicker,
   ProFormDigit,
   ProFormGroup,
   ProFormRadio,
@@ -19,7 +18,7 @@ import { useRef, useState } from 'react'
 function UserPage() {
   const tableActionRef = useRef<ActionType>()
   const [form] = Form.useForm<UserInfo>()
-  const [edidInfoModal, setEditInfoModal] = useState<{
+  const [edidInfoModal, setEdidInfoModal] = useState<{
     open: boolean
     info: UserInfo | undefined
   }>({
@@ -48,6 +47,7 @@ function UserPage() {
       dataIndex: 'vip_expire_time',
       render: (_, data) => {
         const today = new Date()
+        today.setHours(0, 0, 0, 0)
         const todayTime = today.getTime()
         const userSubscribeTime = new Date(data.vip_expire_time).getTime()
         return (
@@ -97,10 +97,10 @@ function UserPage() {
       fixed: 'right',
       render: (_, data) => [
         <Button
-          key="edit"
+          key="del"
           type="link"
           onClick={() => {
-            setEditInfoModal(() => {
+            setEdidInfoModal(() => {
               form?.setFieldsValue({
                 ...data
               })
@@ -156,23 +156,7 @@ function UserPage() {
           })
         }}
         toolbar={{
-          actions: [
-            <Button
-              key="primary"
-              type="primary"
-              size="small"
-              onClick={() => {
-                setEditInfoModal(() => {
-                  return {
-                    open: true,
-                    info: undefined
-                  }
-                })
-              }}
-            >
-              新增用户
-            </Button>
-          ]
+          actions: []
         }}
         rowKey="id"
         search={false}
@@ -183,15 +167,13 @@ function UserPage() {
         open={edidInfoModal.open}
         form={form}
         initialValues={{
-          status: 1,
-          role: 'user',
-          integral: 0
+          status: 1
         }}
         onOpenChange={(visible) => {
           if (!visible) {
             form.resetFields()
           }
-          setEditInfoModal((info) => {
+          setEdidInfoModal((info) => {
             return {
               ...info,
               open: visible
@@ -199,23 +181,14 @@ function UserPage() {
           })
         }}
         onFinish={async (values) => {
-          if (!edidInfoModal.info?.id) {
-            const res = await postAdminUser({
-				...values,
-			})
-			if (res.code) {
-				message.error('新增失败')
-				return false
-			}
-          } else {
-            const res = await putAdminUsers({
-              ...values,
-              id: edidInfoModal.info?.id
-            })
-            if (res.code) {
-              message.error('编辑失败')
-              return false
-            }
+          if (!edidInfoModal.info?.id) return false
+          const res = await putAdminUsers({
+            ...values,
+            id: edidInfoModal.info?.id
+          })
+          if (res.code) {
+            message.error('编辑失败')
+            return false
           }
           tableActionRef.current?.reload?.()
           return true
@@ -273,39 +246,32 @@ function UserPage() {
             rules={[{ required: true, message: '请输入用户名称' }]}
           />
           <ProFormText
+            width="lg"
             name="avatar"
             label="用户头像"
             rules={[{ required: true, message: '请输入用户头像' }]}
           />
-          <ProFormText name="superior_id" label="上级ID" />
         </ProFormGroup>
 
         <ProFormGroup>
           <ProFormDigit
             label="剩余积分"
             name="integral"
-            min={-1000000}
+            min={0}
             max={1000000}
             rules={[{ required: true, message: '请输入剩余积分' }]}
           />
-          <ProFormDateTimePicker
+          <ProFormDatePicker
             name="vip_expire_time"
             label="会员截止日期"
             rules={[{ required: true, message: '请输入剩余积分' }]}
           />
-          <ProFormDateTimePicker
+          <ProFormDatePicker
             name="svip_expire_time"
             label="超级会员截止日期"
             rules={[{ required: true, message: '请输入剩余积分' }]}
           />
         </ProFormGroup>
-        {!edidInfoModal?.info?.id && (
-          <ProFormText
-            name="password"
-            label="默认密码"
-            rules={[{ required: true, message: '请输入默认密码' }]}
-          />
-        )}
       </ModalForm>
     </div>
   )

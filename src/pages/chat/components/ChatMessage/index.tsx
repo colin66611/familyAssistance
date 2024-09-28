@@ -1,53 +1,18 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import React, { useEffect, useMemo, useRef } from 'react'
 import { copyToClipboard, joinTrim } from '@/utils'
 import styles from './index.module.less'
 import OpenAiLogo from '@/components/OpenAiLogo'
-import { Space, Popconfirm, message, Dropdown } from 'antd'
+import { Space, Popconfirm, message } from 'antd'
 
 import MarkdownIt from 'markdown-it'
 import mdKatex from '@traptitech/markdown-it-katex'
 import mila from 'markdown-it-link-attributes'
 import hljs from 'highlight.js'
-import { CopyOutlined, DeleteOutlined, MoreOutlined, RedoOutlined } from '@ant-design/icons'
+import { DeleteOutlined } from '@ant-design/icons'
 
-import ai3Logo from '@/assets/openai/ai3.svg'
-import ai4Logo from '@/assets/openai/ai4.svg'
-import avatarIcon from '@/assets/avatar.png'
-import { PluginInfo } from '@/types'
-import PluginCard from '@/components/PluginCard'
-
-const dropdownItems = [
-  {
-    icon: <CopyOutlined />,
-    label: '复制',
-    key: 'copyout'
-  },
-  {
-    icon: <RedoOutlined />,
-    label: '重试',
-    key: 'refurbish'
-  },
-  {
-    icon: <DeleteOutlined />,
-    label: '删除',
-    key: 'delete'
-  }
-]
-
-function screenDropdownItems(status: string, position: 'left' | 'right') {
-  const newList = dropdownItems.filter((item) => {
-    if (status !== 'error' && item.key === 'delete') {
-      return false
-    }
-
-    if (position !== 'left' && item.key === 'refurbish') {
-      return false
-    }
-    return true
-  })
-
-  return [...newList]
-}
+import gpt4png from '@/assets/4.png';
+import gpt3png from '@/assets/3.png';
+import gptheaderpng from '@/assets/header.png';
 
 function ChatMessage({
   position,
@@ -55,9 +20,7 @@ function ChatMessage({
   status,
   time,
   model,
-  onDelChatMessage,
-  onRefurbishChatMessage,
-  pluginInfo
+  onDelChatMessage
 }: {
   position: 'left' | 'right'
   content?: string
@@ -65,29 +28,9 @@ function ChatMessage({
   time: string
   model?: string
   onDelChatMessage?: () => void
-  onRefurbishChatMessage?: () => void
-  pluginInfo?: PluginInfo
 }) {
   const copyMessageKey = 'copyMessageKey'
   const markdownBodyRef = useRef<HTMLDivElement>(null)
-
-  function onCopyOut(text: string) {
-    copyToClipboard(text)
-      .then(() => {
-        message.open({
-          key: copyMessageKey,
-          type: 'success',
-          content: '复制成功'
-        })
-      })
-      .catch(() => {
-        message.open({
-          key: copyMessageKey,
-          type: 'error',
-          content: '复制失败'
-        })
-      })
-  }
 
   function addCopyEvents() {
     if (markdownBodyRef.current) {
@@ -96,7 +39,21 @@ function ChatMessage({
         btn.addEventListener('click', () => {
           const code = btn.parentElement?.nextElementSibling?.textContent
           if (code) {
-            onCopyOut(code)
+            copyToClipboard(code)
+              .then(() => {
+                message.open({
+                  key: copyMessageKey,
+                  type: 'success',
+                  content: '复制成功'
+                })
+              })
+              .catch(() => {
+                message.open({
+                  key: copyMessageKey,
+                  type: 'error',
+                  content: '复制失败'
+                })
+              })
           }
         })
       })
@@ -134,53 +91,39 @@ function ChatMessage({
   mdi.use(mila, { attrs: { target: '_blank', rel: 'noopener' } })
   mdi.use(mdKatex, { blockClass: 'katex-block', errorColor: ' #cc0000', output: 'mathml' })
 
-  const renderText = useMemo(() => {
+  const text = useMemo(() => {
     const value = content || ''
-    if (position === 'right') {
-      return (
-        <div ref={markdownBodyRef} className="markdown-body">
-          {value}
-        </div>
-      )
-    }
-    const renderMdHtml = mdi.render(value)
-    return (
-      <div
-        ref={markdownBodyRef}
-        className="markdown-body"
-        dangerouslySetInnerHTML={{
-          __html: renderMdHtml
-        }}
-      />
-    )
-  }, [content, position])
+    return mdi.render(value)
+  }, [content])
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     addCopyEvents()
     return () => {
       removeCopyEvents()
     }
-  }, [markdownBodyRef.current, content])
+  }, [markdownBodyRef.current])
 
-  function chatAvatar({
-    isShow,
-    icon,
-    style
-  }: {
-    isShow: boolean
-    icon: string
-    style?: React.CSSProperties
-  }) {
-    if (!isShow) return null
+  function chatAvatar({ icon, style }: { icon: string; style?: React.CSSProperties }) {
     return (
-      <div
-        className={styles.chatMessage_avatarCard}
-        style={{
-          ...style
-        }}
-      >
-        <img src={icon} alt="" />
-      </div>
+      <Space direction="vertical" style={{ textAlign: 'center', ...style }}>
+        <img className={styles.chatMessage_avatar} src={icon} alt="" />
+        {status === 'error' && (
+          <Popconfirm
+            title="删除此条消息"
+            description="此条消息为发送失败消息，是否要删除?"
+            onConfirm={() => {
+              onDelChatMessage?.()
+            }}
+            onCancel={() => {
+              // === 无操作 ===
+            }}
+            okText="是"
+            cancelText="否"
+          >
+            <DeleteOutlined style={{ color: 'red' }} />
+          </Popconfirm>
+        )}
+      </Space>
     )
   }
 
@@ -191,13 +134,11 @@ function ChatMessage({
         justifyContent: position === 'right' ? 'flex-end' : 'flex-start'
       }}
     >
-      {useMemo(() => {
-        return chatAvatar({
+      {position === 'left' &&
+        chatAvatar({
           style: { marginRight: 8 },
-          isShow: position === 'left',
-          icon: model && model.indexOf('gpt-4') !== -1 ? ai4Logo : ai3Logo
-        })
-      }, [])}
+          icon: model && model.indexOf('gpt-4') !== -1 ? gpt4png : gpt3png
+        })}
       <div className={styles.chatMessage_content}>
         <span
           className={styles.chatMessage_content_time}
@@ -207,60 +148,30 @@ function ChatMessage({
         >
           {time}
         </span>
-        {pluginInfo && <PluginCard {...pluginInfo} />}
         <div
           className={joinTrim([
             styles.chatMessage_content_text,
             position === 'right' ? styles.right : styles.left
           ])}
         >
-          {status === 'loading' ? <OpenAiLogo rotate /> : renderText}
-          <div
-            className={styles.chatMessage_content_operate}
-            style={{
-              left: position === 'right' ? -20 : 'none',
-              right: position === 'left' ? -20 : 'none'
-            }}
-          >
-            <Dropdown
-              placement="topRight"
-              arrow={{
-                pointAtCenter: true
+          {status === 'loading' ? (
+            <OpenAiLogo rotate />
+          ) : (
+            <div
+              ref={markdownBodyRef}
+              className={'markdown-body'}
+              dangerouslySetInnerHTML={{
+                __html: text
               }}
-              destroyPopupOnHide
-              trigger={['click', 'hover']}
-              menu={{
-                items: [...screenDropdownItems(status, position)],
-                onClick: ({ key }) => {
-                  console.log(key)
-                  if (key === 'delete') {
-                    onDelChatMessage?.()
-                  }
-
-                  if (key === 'refurbish') {
-                    onRefurbishChatMessage?.()
-                  }
-
-                  if (key === 'copyout' && content) {
-                    onCopyOut(content)
-                  }
-                }
-              }}
-            >
-              <div className={styles.chatMessage_content_operate_icon}>
-                <MoreOutlined />
-              </div>
-            </Dropdown>
-          </div>
+            />
+          )}
         </div>
       </div>
-      {useMemo(() => {
-        return chatAvatar({
+      {position === 'right' &&
+        chatAvatar({
           style: { marginLeft: 8 },
-          isShow: position === 'right',
-          icon: avatarIcon
-        })
-      }, [])}
+          icon: gptheaderpng
+        })}
     </div>
   )
 }

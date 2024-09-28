@@ -5,13 +5,12 @@ import { Dropdown } from 'antd'
 import { LogoutOutlined } from '@ant-design/icons'
 import React, { useState } from 'react'
 import menuList from '@/routers/menu_list'
-import { chatStore, userStore } from '@/store'
+import { userStore } from '@/store'
 import OpenAiLogo from '@/components/OpenAiLogo'
 
 function AdminPage() {
   const navigate = useNavigate()
   const { token, user_info, logout } = userStore()
-  const { clearChats } = chatStore()
   const [selectedKeys, setSelectedKeys] = useState<Array<string>>([])
   if (!token || user_info?.role !== 'administrator') {
     return (
@@ -38,7 +37,6 @@ function AdminPage() {
         contentWidth="Fluid"
         fixedHeader
         fixSiderbar
-        theme="light"
         contentStyle={
           {
             //   height: 'calc(100vh - 10px)'
@@ -48,7 +46,7 @@ function AdminPage() {
         siderMenuType="group"
         menu={{
           locale: false,
-          collapsedShowGroupTitle: false,
+          collapsedShowGroupTitle: false
         }}
         // settings={{}}
         suppressSiderWhenMenuEmpty
@@ -81,7 +79,6 @@ function AdminPage() {
                       label: '退出登录',
                       onClick: () => {
                         logout()
-						clearChats()
                         navigate('/login')
                       }
                     }
@@ -101,10 +98,7 @@ function AdminPage() {
                 textAlign: 'center',
                 paddingBlockStart: 12
               }}
-            >
-              <div>© 2023 Made with love</div>
-              <div>by Chatgpt</div>
-            </div>
+            />
           )
         }}
         menuProps={{
@@ -118,16 +112,9 @@ function AdminPage() {
               setSelectedKeys([...r.keyPath])
             }
           },
-          selectedKeys: [...selectedKeys],
-          theme: 'light'
+          selectedKeys: [...selectedKeys]
         }}
         breadcrumbRender={() => []}
-        footerRender={() => (
-          <DefaultFooter
-            links={[{ key: 'github', title: 'github', href: 'https://github.com/79E/ChatGpt-Web' }]}
-            copyright="ChatGpt"
-          />
-        )}
       >
         <PageContainer>
           <Outlet />

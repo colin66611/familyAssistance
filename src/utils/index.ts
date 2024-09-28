@@ -7,8 +7,5 @@ export * from './filterObjectNull'
 export * from './copyToClipboard'
 export * from './getEmailPre'
 export * from './handleChatData'
-export * from './htmlToImage'
-export * from './textToMdFile'
-import transform from './transform'
 import is from './is'
-export { is, transform }
+export { is }

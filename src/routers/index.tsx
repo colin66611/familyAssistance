@@ -15,7 +15,6 @@ export interface RouteOptions extends Omit<Omit<RouteObject, 'children'>, 'index
 
 const ChatPage = React.lazy(() => import('@/pages/chat'))
 const DrawPage = React.lazy(() => import('@/pages/draw'))
-const MappingPage = React.lazy(() => import('@/pages/mapping'))
 const ShopPage = React.lazy(() => import('@/pages/shop'))
 const UserPage = React.lazy(() => import('@/pages/user'))
 const LoginPage = React.lazy(() => import('@/pages/login'))
@@ -29,19 +28,12 @@ import AdminTurnoverPage from '@/pages/admin/turnover'
 import AdminSigninPage from '@/pages/admin/signin'
 import AdminMessagePage from '@/pages/admin/message'
 import AdminProductPage from '@/pages/admin/product'
-import AdminAikeyPage from '@/pages/admin/aikey'
+import AdminTokenPage from '@/pages/admin/token'
 import AdminConfigPage from '@/pages/admin/config'
 import AdminPaymentPage from '@/pages/admin/payment'
 import AdminOrderPage from '@/pages/admin/order'
 import AdminNotificationPage from '@/pages/admin/notification'
-import AdminCashbackPage from '@/pages/admin/cashback'
-import AdminInvitePage from '@/pages/admin/invite'
-import AdminWithdrawalPage from '@/pages/admin/withdrawal'
-import AdminAmountsPage from '@/pages/admin/amounts'
-import AdminDialogPage from '@/pages/admin/dialog'
-import AdminPersonaPage from '@/pages/admin/persona'
-import AdminPluginPage from '@/pages/admin/plugin'
-import AdminDrawPage from '@/pages/admin/draw'
+
 
 export const webRouter: RouteOptions[] = [
   {
@@ -58,16 +50,6 @@ export const webRouter: RouteOptions[] = [
     id: 'DrawPage',
     path: '/draw',
     element: <DrawPage />,
-    children: [],
-    configure: {
-      verifToken: false,
-      role: ['user', 'administrator']
-    }
-  },
-  {
-    id: 'MappingPage',
-    path: '/mapping',
-    element: <MappingPage />,
     children: [],
     configure: {
       verifToken: false,
@@ -198,17 +180,6 @@ export const adminRouter: RouteOptions[] = [
         }
       },
       {
-        id: 'AdminDialogPage',
-        path: '/admin/dialog',
-        element: <AdminDialogPage />,
-        index: false,
-        configure: {
-          title: '内置对话',
-          verifToken: true,
-          role: ['administrator']
-        }
-      },
-      {
         id: 'AdminProductPage',
         path: '/admin/product',
         element: <AdminProductPage />,
@@ -231,12 +202,12 @@ export const adminRouter: RouteOptions[] = [
         }
       },
       {
-        id: 'AdminAikeyPage',
-        path: '/admin/aikey',
-        element: <AdminAikeyPage />,
+        id: 'AdminTokenPage',
+        path: '/admin/token',
+        element: <AdminTokenPage />,
         index: false,
         configure: {
-          title: 'AI Key管理',
+          title: 'Toekn管理',
           verifToken: true,
           role: ['administrator']
         }
@@ -263,90 +234,13 @@ export const adminRouter: RouteOptions[] = [
           role: ['administrator']
         }
       },
-      {
+	  {
         id: 'AdminNotificationPage',
         path: '/admin/notification',
         element: <AdminNotificationPage />,
         index: false,
         configure: {
           title: '系统通知配置',
-          verifToken: true,
-          role: ['administrator']
-        }
-      },
-      {
-        id: 'AdminCashbackPage',
-        path: '/admin/cashback',
-        element: <AdminCashbackPage />,
-        index: false,
-        configure: {
-          title: '消费提成记录',
-          verifToken: true,
-          role: ['administrator']
-        }
-      },
-      {
-        id: 'AdminInvitePage',
-        path: '/admin/invite',
-        element: <AdminInvitePage />,
-        index: false,
-        configure: {
-          title: '邀请记录',
-          verifToken: true,
-          role: ['administrator']
-        }
-      },
-      {
-        id: 'AdminWithdrawalPage',
-        path: '/admin/withdrawal',
-        element: <AdminWithdrawalPage />,
-        index: false,
-        configure: {
-          title: '提现记录',
-          verifToken: true,
-          role: ['administrator']
-        }
-      },
-      {
-        id: 'AdminAmountsPage',
-        path: '/admin/amounts',
-        element: <AdminAmountsPage />,
-        index: false,
-        configure: {
-          title: '金额明细',
-          verifToken: true,
-          role: ['administrator']
-        }
-      },
-      {
-        id: 'AdminPersonaPage',
-        path: '/admin/persona',
-        element: <AdminPersonaPage />,
-        index: false,
-        configure: {
-          title: '角色配置',
-          verifToken: true,
-          role: ['administrator']
-        }
-      },
-      {
-        id: 'AdminPluginPage',
-        path: '/admin/plugin',
-        element: <AdminPluginPage />,
-        index: false,
-        configure: {
-          title: '插件管理',
-          verifToken: true,
-          role: ['administrator']
-        }
-      },
-      {
-        id: 'AdminDrawPage',
-        path: '/admin/draw',
-        element: <AdminDrawPage />,
-        index: false,
-        configure: {
-          title: '绘画记录管理',
           verifToken: true,
           role: ['administrator']
         }

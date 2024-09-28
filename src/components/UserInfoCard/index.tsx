@@ -2,30 +2,26 @@ import { UserInfo } from '@/types'
 import styles from './index.module.less'
 import { Space, Statistic, Tooltip } from 'antd'
 import { useMemo } from 'react'
+import vip from '@/assets/vip.png';
+import svip from '@/assets/svip.png';
+
 
 function UserInfoCard(props: { info?: UserInfo,  children?: React.ReactNode; }) {
 
   const vipIcon = {
-    vip: 'https://s.ibaotu.com/next/img/new/ep.4814.png',
-    svip: 'https://s.ibaotu.com/next/img/new/person.b254.png'
+    vip: vip,
+    svip: svip,
   }
 
   const vipDay = useMemo(() => {
     if (!props.info?.vip_expire_time) return 0
-    const todayTime = new Date().getTime()
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayTime = today.getTime()
     const vipExpireTime = new Date(props.info?.vip_expire_time || 0).getTime()
     if (vipExpireTime < todayTime) return 0
-    const second = vipExpireTime - todayTime
-    const day = second / 86400000
-    if(day < 1){
-      const s = Math.floor(second / 1000);
-      const h = Math.floor(s / 3600);
-      const m = Math.floor((s % 3600) / 60);
-      // const rs = s % 60;
-      return `${h}小时${m}分`
-    }
-
-    return Math.ceil(day) + '天'
+    const time = Math.ceil((vipExpireTime - todayTime) / 86400000)
+    return time
   }, [props])
 
   const isSvip = useMemo(()=>{
@@ -51,7 +47,7 @@ function UserInfoCard(props: { info?: UserInfo,  children?: React.ReactNode; }) 
           <div className={styles.userInfo_info_title}>
             <span>{info?.nickname}</span>
             {
-              isSvip ? <Tooltip title="超级会员"><img src={vipIcon.svip} alt="" /></Tooltip> : 
+              isSvip ? <Tooltip title="超级会员"><img src={vipIcon.svip} alt="" /></Tooltip> :
               vipDay ? <Tooltip title="会员"><img src={vipIcon.vip} alt="" /></Tooltip>: ''
             }
           </div>
@@ -60,7 +56,7 @@ function UserInfoCard(props: { info?: UserInfo,  children?: React.ReactNode; }) 
         <div className={styles.userInfo_vip}>
           <Space wrap size="large">
             <Statistic title="积分" value={info?.integral} />
-            <Statistic title="会员" value={vipDay} />
+            <Statistic title="会员(天)" value={vipDay} />
           </Space>
         </div>
       </div>

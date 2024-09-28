@@ -4,72 +4,54 @@ import { RequestLoginParams } from '@/types'
 import {
   HeartFilled,
   LockOutlined,
-  UserOutlined,
+  MailOutlined,
   RedditCircleFilled,
+  RobotOutlined,
   SlackCircleFilled,
+  SmileFilled,
   TwitterCircleFilled
 } from '@ant-design/icons'
 import { LoginForm, ProFormCaptcha, ProFormText } from '@ant-design/pro-form'
-import { Button, Form, FormInstance, Modal, Space, Tabs } from 'antd'
+import { Form, FormInstance, Modal, Space, Tabs } from 'antd'
 import { useState } from 'react'
-import { useNavigation, useLocation } from 'react-router-dom'
 
 type Props = {
   open: boolean
   onCancel: () => void
 }
 
-type LoginType = 'code' | 'password' | 'register' | string;
+type LoginType = 'code' | 'password' | string;
 
 export function LoginCard(props: {
   form: FormInstance<RequestLoginParams>
-  onSuccess: () => void,
-  type?: LoginType
+  onSuccess: () => void
 }) {
 
-  const location = useLocation();
-
-  function getQueryParam(key: string) {
-    const queryString = location.search || window.location.search;
-    const urlParams = new URLSearchParams(queryString);
-    return urlParams.get(key) || '';
-  }
-
-  const { type = 'password' } = props;
-
-  const [loginTabsValue, setLoginTabsValue] = useState<LoginType>('login');
-  const [loginType, setLoginType] = useState<LoginType>(type);
+  const [loginType, setLoginType] = useState<LoginType>('code');
 
   return (
     <LoginForm<RequestLoginParams>
       form={props.form}
-      logo="https://u1.dl0.cn/icon/openailogo.svg"
+      logo={import.meta.env.VITE_APP_LOGO}
       title=""
-      subTitle="基于大语言模型的AI对话产品"
-      actions={(
-        <div
-          style={{
-            textAlign: 'center',
-            fontSize: 14
-          }}
-        >
-          <p>登录即代表你同意 <a href="https://www.baidu.com/">《平台协议》</a>和<a href="https://www.baidu.com/">《隐私政策》</a> </p>
-        </div>
-      )}
+      subTitle="全网最便宜的人工智能对话"
+      // actions={(
+      //   <Space>
+      //     <HeartFilled />
+      //     <RedditCircleFilled />
+      //     <SlackCircleFilled />
+      //     <TwitterCircleFilled />
+      //   </Space>
+      // )}
       contentStyle={{
         width: '100%',
         maxWidth: '340px',
         minWidth: '100px'
       }}
-      submitter={{
-        searchConfig: {
-          submitText: loginType === 'register' ? '注册&登录' : '登录',
-        }
-      }}
       onFinish={async (e) => {
         return new Promise((resolve, reject) => {
           userAsync
-            .fetchLogin({ ...e, invite_code: getQueryParam('invite_code') })
+            .fetchLogin({ ...e })
             .then((res) => {
               if (res.code) {
                 reject(false)
@@ -86,31 +68,20 @@ export function LoginCard(props: {
     >
       <Tabs
         centered
-        activeKey={loginTabsValue}
+        activeKey={loginType}
         onChange={(activeKey) => {
-          props.form.resetFields()
-          const type = activeKey === 'login' ? 'password' : activeKey
-          setLoginType(type)
-          setLoginTabsValue(activeKey)
+          setLoginType(activeKey)
         }}
-        items={[
-          {
-            key: 'login',
-            label: '账户登录',
-          },
-          {
-            key: 'register',
-            label: '注册账户',
-          },
-        ]}
-      />
+      >
+        <Tabs.TabPane key="code" tab="登录/注册" />
+        <Tabs.TabPane key="password" tab="密码登录" />
+      </Tabs>
       <ProFormText
         fieldProps={{
           size: 'large',
-          prefix: <UserOutlined />
+          prefix: <RobotOutlined />
         }}
         name="account"
-        placeholder="电子邮箱/手机号码"
         rules={[
           {
             required: true,
@@ -118,7 +89,7 @@ export function LoginCard(props: {
         ]}
       />
       {
-        loginType !== 'password' && (
+        loginType === 'code' && (
           <ProFormCaptcha
             fieldProps={{
               size: 'large',
@@ -143,6 +114,15 @@ export function LoginCard(props: {
             ]}
             onGetCaptcha={async () => {
               const account = props.form.getFieldValue('account')
+              if (!account) {
+                props.form.setFields([
+                  {
+                    name: 'account',
+                    errors: ['请输入有效的账号']
+                  }
+                ])
+                return Promise.reject()
+              }
               return new Promise((resolve, reject) =>
                 getCode({ source: account })
                   .then(() => resolve())
@@ -153,7 +133,7 @@ export function LoginCard(props: {
         )
       }
       {
-        loginType !== 'code' && (
+        loginType === 'password' && (
           <ProFormText.Password
             name="password"
             fieldProps={{
@@ -164,37 +144,13 @@ export function LoginCard(props: {
             rules={[
               {
                 required: true,
-                message: '8位及以上字母数字',
-                pattern: /^(?:[a-zA-Z]{8,}|\d{8,}|(?=.*\d)(?=.*[a-zA-Z])[a-zA-Z\d]{8,})$/
+                message: '8位及以上至少包含一个字母和一个数字',
+                pattern: /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8,}$/
               },
             ]}
           />
         )
       }
-      <div style={{ textAlign: 'right' }}>
-        {
-          (loginTabsValue === 'login' && loginType === 'code') && (
-            <Button type="link" onClick={() => {
-              props.form.resetFields()
-              setLoginType('password')
-            }}
-            >
-              密码登录
-            </Button>
-          )
-        }
-        {
-          (loginTabsValue === 'login' && loginType === 'password') && (
-            <Button type="link" onClick={() => {
-              props.form.resetFields()
-              setLoginType('code')
-            }}
-            >
-              验证码登录
-            </Button>
-          )
-        }
-      </div>
       <div
         style={{
           marginBlockEnd: 24

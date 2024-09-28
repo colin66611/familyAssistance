@@ -1,34 +1,24 @@
 import {
-  CalculatorFilled,
   CommentOutlined,
-  ContactsFilled,
   CrownFilled,
-  DropboxCircleFilled,
   ExperimentFilled,
-  FileImageFilled,
   FileTextFilled,
   GithubFilled,
   GithubOutlined,
-  GitlabFilled,
   GoldenFilled,
   IdcardFilled,
   InsuranceFilled,
   LockFilled,
-  MediumSquareFilled,
   MessageFilled,
   MoneyCollectFilled,
   NotificationFilled,
   PictureOutlined,
-  RadarChartOutlined,
   ReconciliationFilled,
-  RedEnvelopeFilled,
-  RedditCircleFilled,
   ScheduleFilled,
   SettingFilled,
   ShopFilled,
   ShopOutlined,
   SmileFilled,
-  UsergroupAddOutlined,
   WalletFilled
 } from '@ant-design/icons'
 
@@ -46,28 +36,16 @@ const web = [
     message: '利用智能AI绘画出图片'
   },
   {
-    path: '/mapping',
-    name: '思维导图',
-    icon: <RadarChartOutlined />,
-    message: '利用智能AI生成思维导图'
-  },
-  {
     path: '/shop',
     name: '商城',
     icon: <ShopOutlined />,
     message: '账户余额和充值套餐记录'
   },
-  {
-    path: '/user',
-    name: '邀请',
-    icon: <UsergroupAddOutlined />,
-    message: '账户余额和充值套餐记录'
-  },
-  {
-    path: 'https://github.com/79E/ChatGpt-Web',
+ {
+     path: 'https://github.com/vastxie/ChatGpt-Web',
     name: '项目地址',
-    icon: <GithubOutlined />,
-    message: '免费开源可商业化AiWeb项目'
+     icon: <GithubOutlined />,
+     message: '免费开源可商业化AIWeb项目'
   }
 ]
 
@@ -92,8 +70,8 @@ const admin = {
           icon: <LockFilled />
         },
         {
-          path: '/admin/aikey',
-          name: 'AI Key管理',
+          path: '/admin/token',
+          name: 'Token管理',
           icon: <InsuranceFilled />
         }
       ]
@@ -119,59 +97,19 @@ const admin = {
           path: '/admin/signin',
           name: '签到记录',
           icon: <ScheduleFilled />
-        },
-        {
-          path: '/admin/invite',
-          name: '邀请记录',
-          icon: <ContactsFilled />
-        },
-        {
-          path: '/admin/cashback',
-          name: '佣金提成',
-          icon: <CalculatorFilled />
-        },
-        {
-          path: '/admin/withdrawal',
-          name: '提现申请',
-          icon: <RedEnvelopeFilled />
-        },
-        {
-          path: '/admin/amounts',
-          name: '余额明细',
-          icon: <MediumSquareFilled />
-        },
+        }
       ]
     },
     {
-      name: '功能性管理',
+      name: '会话管理',
       icon: <MessageFilled />,
       path: '/admin_message',
       routes: [
         {
-          path: '/admin/dialog',
-          name: '内置对话',
-          icon: <GitlabFilled />
-        },
-        {
-          path: '/admin/persona',
-          name: '角色配置',
-          icon: <RedditCircleFilled />
-        },
-        {
-          path: '/admin/plugin',
-          name: '插件管理',
-          icon: <DropboxCircleFilled />
-        },
-        {
           path: '/admin/messages',
           name: '消息列表',
           icon: <FileTextFilled />
-        },
-        {
-          path: '/admin/draw',
-          name: '绘画列表',
-          icon: <FileImageFilled />
-        },
+        }
       ]
     },
     {
@@ -197,17 +135,17 @@ const admin = {
       ]
     },
     {
-      name: '通知配置',
-      path: '/admin/notification',
-      icon: <NotificationFilled />
-    },
-    {
       path: '/admin/config',
       name: '系统配置',
       icon: <SettingFilled />
     },
+	{
+		name: '通知配置',
+        path: '/admin/notification',
+		icon: <NotificationFilled />
+    },
     {
-      path: 'https://github.com/79E/ChatGpt-Web',
+      path: 'https://github.com/vastxie/ChatGpt-Web',
       name: 'Github',
       icon: <GithubFilled />
     }

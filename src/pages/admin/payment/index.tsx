@@ -4,7 +4,7 @@ import {
   addAdminPayment,
   putAdminPayment
 } from '@/request/adminApi'
-import { AlipayInfo, HpjPayInfo, JsPayInfo, PaymentInfo, YipayInfo } from '@/types/admin'
+import { AlipayInfo, PaymentInfo, YipayInfo } from '@/types/admin'
 import {
   ActionType,
   BetaSchemaForm,
@@ -21,12 +21,12 @@ import { ProTable } from '@ant-design/pro-components'
 import { Button, Form, Space, Tag, message } from 'antd'
 import { useRef, useState } from 'react'
 
-type MIXInfo = PaymentInfo & AlipayInfo & YipayInfo & JsPayInfo & HpjPayInfo
+type MIXInfo = PaymentInfo & AlipayInfo & YipayInfo
 
 function PaymentPage() {
   const tableActionRef = useRef<ActionType>()
   const [form] = Form.useForm<MIXInfo>()
-  const [edidInfoModal, setEditInfoModal] = useState<{
+  const [edidInfoModal, setEdidInfoModal] = useState<{
     open: boolean
     info: PaymentInfo | undefined
   }>({
@@ -85,7 +85,7 @@ function PaymentPage() {
           key="edit"
           type="link"
           onClick={() => {
-            setEditInfoModal(() => {
+            setEdidInfoModal(() => {
               const json = JSON.parse(data.params)
               const types = data.types.split(',')
               form?.setFieldsValue({
@@ -216,7 +216,7 @@ function PaymentPage() {
         valueType: 'group',
         columns: [
           {
-            title: '商户号ID',
+            title: '商户ID',
             dataIndex: 'pid',
             formItemProps: {
               rules: [
@@ -261,111 +261,6 @@ function PaymentPage() {
           }
         ]
       }
-    ],
-    jspay: [
-      {
-        title: 'PayJS配置',
-        valueType: 'group',
-        columns: [
-          {
-            title: '商户号ID',
-            dataIndex: 'mchid',
-            formItemProps: {
-              rules: [
-                {
-                  required: true,
-                  message: '此项为必填项'
-                }
-              ]
-            },
-            width: 'md'
-          },
-          {
-            title: '商户密钥',
-            dataIndex: 'key',
-            formItemProps: {
-              rules: [
-                {
-                  required: true,
-                  message: '此项为必填项'
-                }
-              ]
-            },
-            width: 'md'
-          },
-          {
-            title: '接口地址',
-            dataIndex: 'api',
-            width: 'lg',
-            formItemProps: {
-              rules: [
-                {
-                  required: true,
-                  message: '此项为必填项'
-                }
-              ]
-            }
-          },
-          {
-            title: '跳转通知地址 return_url',
-            dataIndex: 'return_url',
-            width: 'sm'
-          }
-        ]
-      }
-    ],
-    hpjpay: [
-      {
-        title: '虎皮椒支付配置',
-        valueType: 'group',
-        columns: [
-          {
-            title: '商户号ID',
-            dataIndex: 'appid',
-            formItemProps: {
-              rules: [
-                {
-                  required: true,
-                  message: '此项为必填项'
-                }
-              ]
-            },
-            width: 'md'
-          },
-          {
-            title: '商户密钥',
-            dataIndex: 'key',
-            formItemProps: {
-              rules: [
-                {
-                  required: true,
-                  message: '此项为必填项'
-                }
-              ]
-            },
-            width: 'md'
-          },
-          {
-            title: '接口地址',
-            dataIndex: 'api',
-            width: 'lg',
-            formItemProps: {
-              rules: [
-                {
-                  required: true,
-                  message: '仅需填写域名即可如：https://pay.wx.com',
-                  pattern: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*[^\/]$/i
-                }
-              ]
-            }
-          },
-          {
-            title: '跳转通知地址 return_url',
-            dataIndex: 'return_url',
-            width: 'sm'
-          },
-        ]
-      }
     ]
   }
 
@@ -391,26 +286,6 @@ function PaymentPage() {
         ...data,
         params: JSON.stringify({
           pid: obj?.pid,
-          key: obj?.key,
-          api: obj?.api,
-          return_url: obj?.return_url
-        })
-      }
-    } else if (obj.channel === 'jspay') {
-      return {
-        ...data,
-        params: JSON.stringify({
-          mchid: obj?.mchid,
-          key: obj?.key,
-          api: obj?.api,
-          return_url: obj?.return_url
-        })
-      }
-    } else if (obj.channel === 'hpjpay') {
-      return {
-        ...data,
-        params: JSON.stringify({
-          appid: obj?.appid,
           key: obj?.key,
           api: obj?.api,
           return_url: obj?.return_url
@@ -448,7 +323,7 @@ function PaymentPage() {
               type="primary"
               size="small"
               onClick={() => {
-                setEditInfoModal(() => {
+                setEdidInfoModal(() => {
                   return {
                     open: true,
                     info: undefined
@@ -477,7 +352,7 @@ function PaymentPage() {
           if (!visible) {
             form.resetFields()
           }
-          setEditInfoModal((info) => {
+          setEdidInfoModal((info) => {
             return {
               ...info,
               open: visible
@@ -567,14 +442,6 @@ function PaymentPage() {
               {
                 label: '易支付',
                 value: 'yipay'
-              },
-              {
-                label: 'PayJS',
-                value: 'jspay'
-              },
-              {
-                label: '虎皮椒',
-                value: 'hpjpay'
               }
             ]}
             rules={[{ required: true, message: '请选择状态' }]}

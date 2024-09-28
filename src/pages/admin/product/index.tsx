@@ -15,13 +15,13 @@ import {
   ProFormText
 } from '@ant-design/pro-components'
 import { ProTable } from '@ant-design/pro-components'
-import { Button, Form, Tag, Tooltip, message } from 'antd'
+import { Button, Form, Tag, message } from 'antd'
 import { useRef, useState } from 'react'
 
 function ProductPage() {
   const tableActionRef = useRef<ActionType>()
   const [form] = Form.useForm<ProductInfo>()
-  const [edidInfoModal, setEditInfoModal] = useState<{
+  const [edidInfoModal, setEdidInfoModal] = useState<{
     open: boolean
     info: ProductInfo | undefined
   }>({
@@ -73,24 +73,11 @@ function ProductPage() {
       }
     },
     {
-      title: '商品描述',
-      dataIndex: 'describe',
-      ellipsis: {
-        showTitle: false
-      },
-      render: (_, data) => <Tooltip title={data.describe}>{data.describe}</Tooltip>
-    },
-    {
       title: '状态值',
       dataIndex: 'status',
       render: (_, data) => (
         <Tag color={data.status ? 'green' : 'red'}>{data.status ? '上架' : '下架'}</Tag>
       )
-    },
-    {
-      title: '排序',
-      dataIndex: 'sort',
-      tooltip: '数字越大越往后排'
     },
     {
       title: '创建时间',
@@ -110,7 +97,7 @@ function ProductPage() {
           key="edit"
           type="link"
           onClick={() => {
-            setEditInfoModal(() => {
+            setEdidInfoModal(() => {
               form?.setFieldsValue({
                 ...data
               })
@@ -170,7 +157,7 @@ function ProductPage() {
               type="primary"
               size="small"
               onClick={() => {
-                setEditInfoModal(() => {
+                setEdidInfoModal(() => {
                   return {
                     open: true,
                     info: undefined
@@ -192,14 +179,13 @@ function ProductPage() {
         form={form}
         initialValues={{
           status: 1,
-          level: 1,
-          sort: 1
+          level: 1
         }}
         onOpenChange={(visible) => {
           if (!visible) {
             form.resetFields()
           }
-          setEditInfoModal((info) => {
+          setEdidInfoModal((info) => {
             return {
               ...info,
               open: visible
@@ -238,31 +224,20 @@ function ProductPage() {
       >
         <ProFormGroup>
           <ProFormText
-            width="md"
+            width="lg"
             name="title"
             label="标题"
             placeholder="标题"
             rules={[{ required: true, message: '请输入商品标题' }]}
           />
           <ProFormText
-            width="xs"
             name="badge"
             label="角标"
             placeholder="角标"
             rules={[{ required: true, message: '请输入角标' }]}
           />
-          <ProFormDigit
-            width="xs"
-            name="sort"
-            label="排序"
-			tooltip="数字越大越往后排"
-            min={1}
-            max={999999}
-            placeholder="排序"
-            rules={[{ required: true }]}
-          />
         </ProFormGroup>
-        <ProFormText name="describe" label="描述" placeholder="商品描述" />
+
         <ProFormGroup>
           <ProFormDigit
             label="价格(分)"
@@ -325,7 +300,7 @@ function ProductPage() {
               {
                 label: '超级会员',
                 value: 2
-              }
+              },
             ]}
           />
         </ProFormGroup>
