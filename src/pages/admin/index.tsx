@@ -98,7 +98,10 @@ function AdminPage() {
                 textAlign: 'center',
                 paddingBlockStart: 12
               }}
-            />
+            >
+              <div>© 2023 Made with love</div>
+              <div>by Chatgpt</div>
+            </div>
           )
         }}
         menuProps={{
@@ -115,6 +118,12 @@ function AdminPage() {
           selectedKeys: [...selectedKeys]
         }}
         breadcrumbRender={() => []}
+        footerRender={() => (
+          <DefaultFooter
+            links={[{ key: 'github', title: 'github', href: 'https://github.com/79E/ChatGpt-Web' }]}
+            copyright="ChatGpt"
+          />
+        )}
       >
         <PageContainer>
           <Outlet />

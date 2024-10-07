@@ -11,9 +11,6 @@ import { getUserTurnover, postPayPrecreate, postUseCarmi } from '@/request/api'
 import { ProductInfo, TurnoverInfo } from '@/types'
 import OpenAiLogo from '@/components/OpenAiLogo'
 import { Link } from 'react-router-dom'
-import wxpay from '@/assets/wxpay.png';
-import zfbpay from '@/assets/zfbpay.png';
-import qqpay from '@/assets/qqpay.png';
 
 function GoodsPay() {
   const { goodsList, payTypes } = shopStore()
@@ -31,17 +28,17 @@ function GoodsPay() {
     }
   } = {
     wxpay: {
-      icon: wxpay,
+      icon: 'https://files.catbox.moe/b1joiq.png',
       message: '请使用微信扫码支付',
       color: '#24aa39'
     },
     alipay: {
-      icon: zfbpay,
+      icon: 'https://files.catbox.moe/a8x6il.png',
       message: '请使用支付宝扫码支付',
       color: '#1678ff'
     },
     qqpay: {
-      icon: qqpay,
+      icon: 'https://files.catbox.moe/rimuzz.png',
       message: '请使用QQ扫码支付',
       color: '#10b8f6'
     }

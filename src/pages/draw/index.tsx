@@ -81,6 +81,10 @@ function DrawPage() {
         <div className={styles.drawPage_container}>
           <div className={styles.drawPage_container_one}>
             <div className={styles.drawPage_header}>
+              <img
+                src="https://www.imageoss.com/images/2023/05/05/Midjourneybf2f31b4a2ac2dc9.png"
+                alt="Midjourney"
+              />
               <h2>AI 一下，妙笔生画</h2>
               <h4>只需一句话，让你的文字变成画作</h4>
             </div>
@@ -116,8 +120,8 @@ function DrawPage() {
                   onConfirm={() => {
                     clearhistoryDrawImages()
                   }}
-                  okText="是"
-                  cancelText="否"
+                  okText="Yes"
+                  cancelText="No"
                 >
                   <ClearOutlined className={styles.drawPage_mydraw_header_icon} />
                 </Popconfirm>

@@ -2,15 +2,12 @@ import { UserInfo } from '@/types'
 import styles from './index.module.less'
 import { Space, Statistic, Tooltip } from 'antd'
 import { useMemo } from 'react'
-import vip from '@/assets/vip.png';
-import svip from '@/assets/svip.png';
-
 
 function UserInfoCard(props: { info?: UserInfo,  children?: React.ReactNode; }) {
 
   const vipIcon = {
-    vip: vip,
-    svip: svip,
+    vip: 'https://s.ibaotu.com/next/img/new/ep.4814.png',
+    svip: 'https://s.ibaotu.com/next/img/new/person.b254.png'
   }
 
   const vipDay = useMemo(() => {
@@ -47,7 +44,7 @@ function UserInfoCard(props: { info?: UserInfo,  children?: React.ReactNode; }) 
           <div className={styles.userInfo_info_title}>
             <span>{info?.nickname}</span>
             {
-              isSvip ? <Tooltip title="超级会员"><img src={vipIcon.svip} alt="" /></Tooltip> :
+              isSvip ? <Tooltip title="超级会员"><img src={vipIcon.svip} alt="" /></Tooltip> : 
               vipDay ? <Tooltip title="会员"><img src={vipIcon.vip} alt="" /></Tooltip>: ''
             }
           </div>

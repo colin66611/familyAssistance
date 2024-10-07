@@ -41,12 +41,12 @@ const web = [
     icon: <ShopOutlined />,
     message: '账户余额和充值套餐记录'
   },
- {
-     path: 'https://github.com/vastxie/ChatGpt-Web',
-    name: '项目地址',
-     icon: <GithubOutlined />,
-     message: '免费开源可商业化AIWeb项目'
-  }
+  // {
+  //   path: 'https://github.com/79E/ChatGpt-Web',
+  //   name: '项目地址',
+  //   icon: <GithubOutlined />,
+  //   message: '免费开源可商业化AiWeb项目'
+  // }
 ]
 
 const admin = {
@@ -54,7 +54,7 @@ const admin = {
   routes: [
     {
       path: '/admin',
-      name: '欢迎光临',
+      name: '欢迎观临',
       icon: <SmileFilled />
     },
     {
@@ -145,7 +145,7 @@ const admin = {
 		icon: <NotificationFilled />
     },
     {
-      path: 'https://github.com/vastxie/ChatGpt-Web',
+      path: 'https://github.com/79E/ChatGpt-Web',
       name: 'Github',
       icon: <GithubFilled />
     }

@@ -117,8 +117,8 @@ function ChatMessage({
             onCancel={() => {
               // === 无操作 ===
             }}
-            okText="是"
-            cancelText="否"
+            okText="Yes"
+            cancelText="No"
           >
             <DeleteOutlined style={{ color: 'red' }} />
           </Popconfirm>

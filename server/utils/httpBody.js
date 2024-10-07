@@ -4,7 +4,8 @@ function httpBody(code, ...rest) {
     const body = {
         code,
         data: [],
-        message: ''
+        message: '',
+		github: 'https://github.com/79E/ChatGpt-Web'
     };
     if (rest.length === 1 && typeof rest[0] === 'string') {
         body.message = rest[0];

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 'use strict';
 Object.defineProperty(exports, '__esModule', { value: true });
 const tslib_1 = require('tslib');
@@ -29,51 +28,28 @@ router.get('/config', async (req, res, next) => {
     }));
 });
 // 发送验证码
-router.get('/send_sms', async (req, res) => {
+router.get('/send_sms', async (req, res, next) => {
     const source = Array.isArray(req.query.source)
-        ? String(req.query.source[0])
-        : String(req.query.source);
+    ? String(req.query.source[0])
+    : String(req.query.source);
     const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     const phoneRegex = /^1[3456789]\d{9}$/;
-    if (!emailRegex.test(source) && !phoneRegex.test(source)) {
+    if(!emailRegex.test(source) && !phoneRegex.test(source)){
         res.json((0, utils_1.httpBody)(-1, '请输入正确邮箱或手机号'));
         return;
     }
 
-    // 使用 `generateCode` 函数异步生成一个代码，然后将结果存储在 `code` 变量中
     const code = await (0, utils_1.generateCode)();
-
-    // 连接到 Redis，并选择数据库 0
-    // 使用 `setex` 命令将生成的代码 `code` 存储在键 `code:${source}` 中，键名中的 `${source}` 是一个变量
-    // 并设置该键的过期时间为 600 秒
-    await redis_1.default.select(0).setex(`code:${source}`, code, 600);
-
+    await redis_1.default.select(0).setex(`code:${source}`, code, 100);
 
     if (emailRegex.test(source)) {
-        const mailContent = `
-        <div style="font-family: Helvetica, Arial, sans-serif; max-width: 500px; margin: auto; padding: 40px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);">
-            <h2 style="text-align: center; color: #111; font-weight: 400;">验证您的邮箱</h2>
-            <hr style="border: none; border-top: 1px solid #eaeaea; margin: 30px 0;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <span style="display: inline-block; font-size: 42px; font-weight: 700; padding: 10px 20px; background-color: #f5f5f5; border-radius: 10px;">${code}</span>
-            </div>
-            <p style="font-size: 16px; color: #111; text-align: center; line-height: 1.5;">此验证码将在 10 分钟后失效，非本人操作请忽略。</p>
-            <hr style="border: none; border-top: 1px solid #eaeaea; margin: 30px 0;">
-            <p style="font-size: 14px; color: #999; text-align: center;">点击访问：<a href="https://ai.lightai.io" style="color: #007AFF; text-decoration: none;">AI 助手</a></p>
-        </div>
-`;
-        if (emailRegex.test(source)) {
-            await mailer_1.default.send(source, mailContent, `验证码：${code}`, 'code');
-        }
-
+        await mailer_1.default.send(source, `您的验证码为：${code}`);
     }
-
-
 
     res.json((0, utils_1.httpBody)(0, '发送成功'));
 });
 // 登陆注册
-router.post('/login', async (req, res) => {
+router.post('/login', async (req, res, next) => {
     const { account, code, password } = req.body;
     const ip = (0, utils_1.getClientIP)(req);
     if (!account || (!code && !password)) {
@@ -115,28 +91,28 @@ router.post('/login', async (req, res) => {
             const register_reward = (await models_1.configModel.getConfig('register_reward')) || 0;
             userInfo = await models_1.userModel
                 .addUserInfo((0, utils_1.filterObjectNull)({
-                    id,
-                    account,
-                    ip,
-                    nickname: '',
-                    avatar: 'https://image.lightai.io/icon/header.png',
-                    status: 1,
-                    role: 'user',
-                    password: (0, utils_1.generateMd5)((0, utils_1.generateMd5)((0, utils_1.generateUUID)() + Date.now().toString())),
-                    integral: Number(register_reward),
-                    vip_expire_time: (0, utils_2.formatTime)('yyyy-MM-dd', yesterday),
-                    svip_expire_time: (0, utils_2.formatTime)('yyyy-MM-dd', yesterday)
-                }))
+                id,
+                account,
+                ip,
+                nickname: 'Chat用户',
+                avatar: 'https://u1.dl0.cn/icon/1682426702646avatarf3db669b024fad66-1930929abe2847093.png',
+                status: 1,
+                role: 'user',
+                password: (0, utils_1.generateMd5)((0, utils_1.generateMd5)((0, utils_1.generateUUID)() + Date.now().toString())),
+                integral: Number(register_reward),
+                vip_expire_time: (0, utils_2.formatTime)('yyyy-MM-dd', yesterday),
+                svip_expire_time: (0, utils_2.formatTime)('yyyy-MM-dd', yesterday)
+            }))
                 .then((addRes) => {
-                    const turnoverId = (0, utils_1.generateNowflakeId)(1)();
-                    models_1.turnoverModel.addTurnover({
-                        id: turnoverId,
-                        user_id: id,
-                        describe: '注册奖励',
-                        value: `${register_reward}积分`
-                    });
-                    return addRes;
+                const turnoverId = (0, utils_1.generateNowflakeId)(1)();
+                models_1.turnoverModel.addTurnover({
+                    id: turnoverId,
+                    user_id: id,
+                    describe: '注册奖励',
+                    value: `${register_reward}积分`
                 });
+                return addRes;
+            });
         }
         catch (error) {
             res.status(500).json((0, utils_1.httpBody)(-1, '服务器错误'));
@@ -169,7 +145,7 @@ router.post('/login', async (req, res) => {
     }, '登陆成功'));
 });
 // 获取用户信息
-router.get('/user/info', async (req, res) => {
+router.get('/user/info', async (req, res, next) => {
     const user_id = req?.user_id;
     if (!user_id) {
         res.status(500).json((0, utils_1.httpBody)(-1, '服务端错误'));
@@ -186,7 +162,7 @@ router.get('/user/info', async (req, res) => {
     }));
 });
 // 修改用户密码
-router.put('/user/password', async (req, res) => {
+router.put('/user/password', async (req, res, next) => {
     const { account, code, password } = req.body;
     if (!account || !code || !password) {
         res.status(406).json((0, utils_1.httpBody)(-1, '缺少必要参数'));
@@ -218,7 +194,7 @@ router.put('/user/password', async (req, res) => {
     res.status(200).json((0, utils_1.httpBody)(0, '重置密码成功'));
 });
 // 获取用户签到日历
-router.get('/signin/list', async (req, res) => {
+router.get('/signin/list', async (req, res, next) => {
     const user_id = req?.user_id;
     if (!user_id) {
         res.status(500).json((0, utils_1.httpBody)(-1, '服务端错误'));
@@ -234,7 +210,7 @@ router.get('/signin/list', async (req, res) => {
     res.status(200).json((0, utils_1.httpBody)(0, list));
 });
 // 绘画
-router.post('/images/generations', async (req, res) => {
+router.post('/images/generations', async (req, res, next) => {
     const user_id = req?.user_id;
     if (!user_id) {
         res.status(500).json((0, utils_1.httpBody)(-1, '服务端错误'));
@@ -244,11 +220,6 @@ router.post('/images/generations', async (req, res) => {
     const userInfo = await models_1.userModel.getUserInfo({
         id: user_id
     });
-    // 检查用户积分
-    if (userInfo.integral < 10) {
-        res.status(400).json((0, utils_1.httpBody)(-1, [], '积分不足，请在个人中心签到获取积分或开通会员后继续使用'));
-        return;
-    }
     const ip = (0, utils_1.getClientIP)(req);
     let deductIntegral = 0;
     const drawUsePrice = await models_1.configModel.getConfig('draw_use_price');
@@ -264,6 +235,10 @@ router.post('/images/generations', async (req, res) => {
     today.setHours(0, 0, 0, 0);
     const todayTime = today.getTime();
     const vipExpireTime = new Date(userInfo.vip_expire_time).getTime();
+    if (!(userInfo.integral > deductIntegral || vipExpireTime >= todayTime)) {
+        res.status(400).json((0, utils_1.httpBody)(-1, [], '余额不足'));
+        return;
+    }
     const tokenInfo = await models_1.tokenModel.getOneToken({ model: 'dall-e' });
     if (!tokenInfo || !tokenInfo.id) {
         res.status(500).json((0, utils_1.httpBody)(-1, '未配置对应模型'));
@@ -290,7 +265,7 @@ router.post('/images/generations', async (req, res) => {
         return;
     }
     const { data } = (await generations.json());
-    if (vipExpireTime < todayTime && !userInfo.is_vip && !userInfo.is_svip) {
+    if (vipExpireTime < todayTime) {
         models_1.userModel.updataUserVIP({
             id: user_id,
             type: 'integral',
@@ -315,7 +290,7 @@ router.post('/images/generations', async (req, res) => {
     res.json((0, utils_1.httpBody)(0, data));
 });
 // 对话
-router.post('/chat/completions', async (req, res) => {
+router.post('/chat/completions', async (req, res, next) => {
     const user_id = req?.user_id;
     if (!user_id) {
         res.status(500).json((0, utils_1.httpBody)(-1, '服务端错误'));
@@ -326,160 +301,46 @@ router.post('/chat/completions', async (req, res) => {
     });
     const ip = (0, utils_1.getClientIP)(req);
     const { prompt, parentMessageId } = req.body;
-    // 提前从 req.body.options 中取出 model 的值
-    const model = req.body.options?.model;
-
-    let max_tokens_value;
-
-    if (model.includes('gpt-3.5-turbo-16k')) {
-        max_tokens_value = 8000;
-    } else if (model.includes('gpt-3.5-turbo')) {
-        max_tokens_value = 2000;
-    } else if (model.includes('gpt-4')) {
-        max_tokens_value = 4000;
-    } else {
-        max_tokens_value = 2000;
-    }
-
     const options = {
         frequency_penalty: 0,
-        model,
+        model: 'gpt-3.5-turbo',
         presence_penalty: 0,
-        temperature: 0.8,
+        temperature: 0,
         ...req.body.options,
-        max_tokens: max_tokens_value
+        max_tokens: 2000,
     };
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTime = today.getTime();
     const vipExpireTime = new Date(userInfo.vip_expire_time).getTime();
     const svipExpireTime = new Date(userInfo.svip_expire_time).getTime();
-    // 如果模型是 'gpt-4'
-    if (options.model.includes('gpt-4')) {
-        // 检查用户是否是超级会员，如果不是超级会员
-        if (svipExpireTime < todayTime) {
-            // 再检查积分是否不足20
-            if (userInfo.integral <= 20) {
-                res.status(400).json((0, utils_1.httpBody)(-1, [], '积分不足，请在个人中心签到获取积分或开通超级会员后继续使用'));
-                return;
-            }
-        }
+    if (!(userInfo.integral > 0 || vipExpireTime >= todayTime)) {
+        res.status(400).json((0, utils_1.httpBody)(-1, [], '余额不足'));
+        return;
     }
-
-    // 如果模型是 'gpt-3'
-    if (options.model.includes('gpt-3')) {
-        // 检查用户是否是会员，如果用户既不是会员也不是超级会员
-        if (vipExpireTime < todayTime && svipExpireTime < todayTime) {
-            // 再检查积分是否不足0
-            if (userInfo.integral <= 0) {
-                res.status(400).json((0, utils_1.httpBody)(-1, [], '积分不足，请在个人中心签到获取积分或开通会员后继续使用'));
-                return;
-            }
-        }
+    if (options.model.includes('gpt-4') && svipExpireTime < todayTime && userInfo.integral <= 0) {
+        res.status(400).json((0, utils_1.httpBody)(-1, [], 'GPT4为超级会员使用或用积分'));
+        return;
     }
-
     const historyMessageCount = await models_1.configModel.getConfig('history_message_count');
     const getMessagesData = await models_1.messageModel.getMessages({ page: 0, page_size: Number(historyMessageCount) }, {
         parent_message_id: parentMessageId
     });
-    let historyMessages = getMessagesData.rows
+    const historyMessage = getMessagesData.rows
         .map((item) => {
-            return {
-                role: item.toJSON().role,
-                content: item.toJSON().content
-            };
-        })
+        return {
+            role: item.toJSON().role,
+            content: item.toJSON().content
+        };
+    })
         .reverse();
-    // 确保历史消息和新的用户消息不超过限定 token
-
-    let userMessage = prompt;
-    let userMessageTokens = new gpt_tokens_1.GPTTokens({
-        model: options.model,
-        messages: [{
-            role: 'user',
-            content: userMessage
-        }]
-    });
-
-    // 如果用户消息的token数量超过最大限制，进行截断处理
-    if (userMessageTokens.usedTokens > max_tokens_value) {
-        let truncatedUserMessage = userMessage;
-        let truncatedUserMessageTokens;
-
-        // 截取用户消息，每次截取后检查token数量
-        while (userMessageTokens.usedTokens > max_tokens_value) {
-            truncatedUserMessage = truncatedUserMessage.slice(0, truncatedUserMessage.length - 100);
-            truncatedUserMessageTokens = new gpt_tokens_1.GPTTokens({
-                model: options.model,
-                messages: [{
-                    role: 'user',
-                    content: truncatedUserMessage
-                }]
-            });
-            userMessageTokens = truncatedUserMessageTokens;
-        }
-
-        userMessage = truncatedUserMessage;
-    }
-    // 只有在用户消息的token数量未超过最大限制时，才处理历史消息
-    if (userMessageTokens.usedTokens <= max_tokens_value) {
-        const historyMessageCount = await models_1.configModel.getConfig('history_message_count');
-        const getMessagesData = await models_1.messageModel.getMessages({ page: 0, page_size: Number(historyMessageCount) }, {
-            parent_message_id: parentMessageId
-        });
-
-        historyMessages = getMessagesData.rows
-            .map((item) => {
-                return {
-                    role: item.toJSON().role,
-                    content: item.toJSON().content
-                };
-            })
-            .reverse();
-
-        // 创建一个 GPTTokens 对象以计算历史消息的token数量
-        const historyMessagesTokens = new gpt_tokens_1.GPTTokens({
-            model: options.model,
-            messages: historyMessages
-        });
-
-        let total_tokens = historyMessagesTokens.usedTokens;
-        total_tokens += userMessageTokens.usedTokens;
-
-        while (total_tokens > max_tokens_value && historyMessages.length > 0) {
-            // 移除最早的消息
-            const removedMessage = historyMessages.shift();
-            // 更新token总数
-            const removedMessageTokens = new gpt_tokens_1.GPTTokens({
-                model: options.model,
-                messages: [removedMessage]
-            });
-            total_tokens -= removedMessageTokens.usedTokens;
-        }
-    }
-    // 检查是否存在 "system" 角色的消息
-    const systemMessageExists = historyMessages.some(message => message.role === 'system');
-
-    // 如果不存在 "system" 角色的消息，那么在数组开头添加一条
-    if (!systemMessageExists) {
-        const currentDate = new Date();
-        const currentTimeString = currentDate.toLocaleString();  // 转化为本地时间字符串
-
-        historyMessages.unshift({
-            role: 'system',
-            content: `Current time: ${currentTimeString}`
-        });
-    }
-
     const messages = [
-        ...historyMessages,
+        ...historyMessage,
         {
             role: 'user',
-            content: userMessage
+            content: prompt
         }
     ];
-
     const tokenInfo = await models_1.tokenModel.getOneToken({ model: options.model });
     if (!tokenInfo || !tokenInfo.id) {
         res.status(500).json((0, utils_1.httpBody)(-1, '未配置对应AI模型'));
@@ -488,12 +349,12 @@ router.post('/chat/completions', async (req, res) => {
     queue_1.checkTokenQueue.addTask({
         ...tokenInfo
     });
+    console.log('tokenInfo', tokenInfo);
     const chat = await (0, node_fetch_1.default)(`${tokenInfo.host}/v1/chat/completions`, {
         method: 'POST',
         body: JSON.stringify({
             ...options,
             messages,
-            max_tokens: max_tokens_value,
             stream: true
         }),
         headers: {
@@ -544,13 +405,28 @@ router.post('/chat/completions', async (req, res) => {
                             // 将返回的数据存入数据库
                             // 扣除相关
                             models_1.messageModel.addMessages([userMessageInfo, assistantInfo]);
-                            if (options.model.includes('gpt-4') && svipExpireTime < todayTime) {
-                                // GPT-4 非 SVIP 用户扣费逻辑，这里不再计算 tokens，直接扣除固定的 ratio
-                                const ratio = Number(aiRatioInfo.ai4_ratio);
+                            if ((options.model.includes('gpt-4') && svipExpireTime < todayTime) ||
+                                (!options.model.includes('gpt-4') && vipExpireTime < todayTime)) {
+                                const usageInfo = new gpt_tokens_1.GPTTokens({
+                                    model: options.model,
+                                    messages: [
+                                        ...messages,
+                                        {
+                                            role: 'assistant',
+                                            content: assistantInfo.content
+                                        }
+                                    ]
+                                });
+                                const tokens = usageInfo.usedTokens;
+                                let ratio = Number(aiRatioInfo.ai3_ratio);
+                                if (options.model.indexOf('gpt-4') !== -1) {
+                                    ratio = Number(aiRatioInfo.ai4_ratio);
+                                }
+                                const integral = ratio ? Math.ceil(tokens / ratio) : 0;
                                 models_1.userModel.updataUserVIP({
                                     id: user_id,
                                     type: 'integral',
-                                    value: ratio,
+                                    value: integral,
                                     operate: 'decrement'
                                 });
                                 const turnoverId = (0, utils_1.generateNowflakeId)(1)();
@@ -558,23 +434,7 @@ router.post('/chat/completions', async (req, res) => {
                                     id: turnoverId,
                                     user_id,
                                     describe: `对话(${options.model})`,
-                                    value: `-${ratio}积分`
-                                });
-                            } else if (options.model.includes('gpt-3') && vipExpireTime < todayTime && svipExpireTime < todayTime) {
-                                // GPT-3 非 VIP 或 SVIP 用户扣费逻辑，这里不再计算 tokens，直接扣除固定的 ratio
-                                const ratio = Number(aiRatioInfo.ai3_ratio);
-                                models_1.userModel.updataUserVIP({
-                                    id: user_id,
-                                    type: 'integral',
-                                    value: ratio,
-                                    operate: 'decrement'
-                                });
-                                const turnoverId = (0, utils_1.generateNowflakeId)(1)();
-                                models_1.turnoverModel.addTurnover({
-                                    id: turnoverId,
-                                    user_id,
-                                    describe: `对话(${options.model})`,
-                                    value: `-${ratio}积分`
+                                    value: `-${integral}积分`
                                 });
                             }
                             models_1.actionModel.addAction({
@@ -627,8 +487,8 @@ router.post('/use_carmi', async (req, res, next) => {
     const { carmi } = req.body;
     const carmiInfo = await models_1.carmiModel
         .getCarmiInfo({
-            key: carmi
-        })
+        key: carmi
+    })
         .then((i) => i?.toJSON());
     if (!carmiInfo) {
         res.status(400).json((0, utils_1.httpBody)(-1, '卡密不存在'));

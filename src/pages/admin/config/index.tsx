@@ -189,9 +189,9 @@ function ConfigPage() {
           </QueryFilter>
         </div>
         <div className={styles.config_form}>
-          <h3>对话积分</h3>
+          <h3>对话积分扣除比例</h3>
           <p>
-            设置一次对话消耗几积分
+            设置1积分等于多少Token，比如：1积分=50Token，那么单次会话消耗100Token就需要扣除2积分。
           </p>
           <QueryFilter
             form={aiRatioForm}
@@ -210,14 +210,14 @@ function ConfigPage() {
             <ProFormDigit
               name="ai3_ratio"
               label="GPT3"
-              tooltip="每次对话消耗多少积分"
+              tooltip="每1积分等于多少Token"
               min={0}
               max={100000}
             />
             <ProFormDigit
               name="ai4_ratio"
               label="GPT4"
-              tooltip="每次对话消耗多少积分"
+              tooltip="每1积分等于多少Token"
               min={0}
               max={100000}
             />
