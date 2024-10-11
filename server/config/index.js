@@ -24,15 +24,15 @@ function getConfig(key) {
 			port: 6379,
 			password: ''
 		},
-		email: 'admin@163.com',  // 邮件地址
+		email: 'family_assis@163.com',  // 邮件地址
 		email_config: {  // 邮件配置信息
 			host: 'smtp.163.com',  // SMTP服务器地址
 			port: 25,  // SMTP服务器端口号
 			ignoreTLS: true,  // 是否忽略TLS
 			secure: false,  // 是否使用安全连接
 			auth: {
-				user: 'admin@163.com',  // SMTP服务器用户名
-				pass: ''  // SMTP服务器密码
+				user: 'family_assis@163.com',  // SMTP服务器用户名
+				pass: 'EBVhE7QfJBuxU3Ny'  // SMTP服务器密码;10-01,有效期180天
 			}
 		}
 	};
