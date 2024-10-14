@@ -38,6 +38,7 @@ async function verify(req, res, next) {
     }
     // 在加一层是否访问的后端接口
     if (path.indexOf('/api/admin') !== -1 && tokenInfo?.role !== 'administrator') {
+        console.log(tokenInfo);
         res.status(403).json((0, utils_1.httpBody)(-1, '拒绝访问'));
         return;
     }

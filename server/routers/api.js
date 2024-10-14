@@ -129,6 +129,7 @@ router.post('/login', async (req, res, next) => {
         });
     }
     const token = await (0, utils_1.generateToken)(userInfo);
+    console.log('userInfo', userInfo);
     await redis_1.default.select(1).setex(`token:${token}`, JSON.stringify(userInfo), 100000);
     if (isSignin === 1) {
         const today = new Date();
@@ -291,6 +292,7 @@ router.post('/images/generations', async (req, res, next) => {
 });
 // 对话
 router.post('/chat/completions', async (req, res, next) => {
+    // 获取用户ID和信息
     const user_id = req?.user_id;
     if (!user_id) {
         res.status(500).json((0, utils_1.httpBody)(-1, '服务端错误'));
@@ -300,6 +302,8 @@ router.post('/chat/completions', async (req, res, next) => {
         id: user_id
     });
     const ip = (0, utils_1.getClientIP)(req);
+
+    // 获取请求参数
     const { prompt, parentMessageId } = req.body;
     const options = {
         frequency_penalty: 0,
@@ -309,6 +313,8 @@ router.post('/chat/completions', async (req, res, next) => {
         ...req.body.options,
         max_tokens: 2000,
     };
+
+    // 检查用户权限和余额
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTime = today.getTime();
@@ -322,6 +328,8 @@ router.post('/chat/completions', async (req, res, next) => {
         res.status(400).json((0, utils_1.httpBody)(-1, [], 'GPT4为超级会员使用或用积分'));
         return;
     }
+
+    // 获取历史消息
     const historyMessageCount = await models_1.configModel.getConfig('history_message_count');
     const getMessagesData = await models_1.messageModel.getMessages({ page: 0, page_size: Number(historyMessageCount) }, {
         parent_message_id: parentMessageId
@@ -341,6 +349,8 @@ router.post('/chat/completions', async (req, res, next) => {
             content: prompt
         }
     ];
+
+    // 获取AI模型token信息
     const tokenInfo = await models_1.tokenModel.getOneToken({ model: options.model });
     if (!tokenInfo || !tokenInfo.id) {
         res.status(500).json((0, utils_1.httpBody)(-1, '未配置对应AI模型'));
@@ -350,6 +360,8 @@ router.post('/chat/completions', async (req, res, next) => {
         ...tokenInfo
     });
     console.log('tokenInfo', tokenInfo);
+
+    // 发送请求到AI服务
     const chat = await (0, node_fetch_1.default)(`${tokenInfo.host}/v1/chat/completions`, {
         method: 'POST',
         body: JSON.stringify({
@@ -362,6 +374,8 @@ router.post('/chat/completions', async (req, res, next) => {
             Authorization: `Bearer ${tokenInfo.key}`
         }
     });
+
+    // 准备消息对象
     const assistantMessageId = (0, utils_1.generateNowflakeId)(2)();
     const userMessageId = (0, utils_1.generateNowflakeId)(1)();
     const userMessageInfo = {
@@ -380,6 +394,8 @@ router.post('/chat/completions', async (req, res, next) => {
         parent_message_id: parentMessageId,
         ...options
     };
+
+    // 处理流式响应
     if (chat.status === 200 && chat.headers.get('content-type')?.includes('text/event-stream')) {
         const ai3_ratio = (await models_1.configModel.getConfig('ai3_ratio')) || 0;
         const ai4_ratio = (await models_1.configModel.getConfig('ai4_ratio')) || 0;
@@ -387,7 +403,7 @@ router.post('/chat/completions', async (req, res, next) => {
             ai3_ratio,
             ai4_ratio
         };
-        // 想在这里打印数据
+        
         res.setHeader('Content-Type', 'text/event-stream;charset=utf-8');
         const jsonStream = new stream_1.Transform({
             objectMode: true,
@@ -399,14 +415,11 @@ router.post('/chat/completions', async (req, res, next) => {
                     if (list[i]) {
                         const jsonData = JSON.parse(list[i]);
                         if (jsonData.segment === 'stop') {
-                            // 结束存入数据库
-                            // 这里扣除一些东西
-                            // 将用户的消息存入数据库
-                            // 将返回的数据存入数据库
-                            // 扣除相关
+                            // 对话结束，保存消息并处理积分扣除
                             models_1.messageModel.addMessages([userMessageInfo, assistantInfo]);
                             if ((options.model.includes('gpt-4') && svipExpireTime < todayTime) ||
                                 (!options.model.includes('gpt-4') && vipExpireTime < todayTime)) {
+                                // 计算token使用量并扣除积分
                                 const usageInfo = new gpt_tokens_1.GPTTokens({
                                     model: options.model,
                                     messages: [
@@ -419,7 +432,7 @@ router.post('/chat/completions', async (req, res, next) => {
                                 });
                                 const tokens = usageInfo.usedTokens;
                                 let ratio = Number(aiRatioInfo.ai3_ratio);
-                                if (options.model.indexOf('gpt-4') !== -1) {
+                                if (options.model.indexOf('gpt-4') !== -1) { //如果包含gpt-4
                                     ratio = Number(aiRatioInfo.ai4_ratio);
                                 }
                                 const integral = ratio ? Math.ceil(tokens / ratio) : 0;
@@ -437,6 +450,7 @@ router.post('/chat/completions', async (req, res, next) => {
                                     value: `-${integral}积分`
                                 });
                             }
+                            // 记录用户行为
                             models_1.actionModel.addAction({
                                 user_id,
                                 id: (0, utils_1.generateNowflakeId)(23)(),
@@ -446,6 +460,7 @@ router.post('/chat/completions', async (req, res, next) => {
                             });
                         }
                         else {
+                            // 累积AI回复内容
                             assistantInfo.content += jsonData.content;
                         }
                     }
@@ -456,6 +471,8 @@ router.post('/chat/completions', async (req, res, next) => {
         chat.body?.pipe(jsonStream).pipe(res);
         return;
     }
+
+    // 非流式响应处理
     const data = await chat.json();
     res.status(chat.status).json(data);
 });
