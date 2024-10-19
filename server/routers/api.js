@@ -307,10 +307,9 @@ router.post('/chat/completions', async (req, res, next) => {
     const { prompt, parentMessageId } = req.body;
     const options = {
         frequency_penalty: 0,
-        model: 'gpt-3.5-turbo',
+        model: 'coze',  //hardcoding默认的大模型
         presence_penalty: 0,
         temperature: 0,
-        ...req.body.options,
         max_tokens: 2000,
     };
 
@@ -324,34 +323,9 @@ router.post('/chat/completions', async (req, res, next) => {
         res.status(400).json((0, utils_1.httpBody)(-1, [], '余额不足'));
         return;
     }
-    if (options.model.includes('gpt-4') && svipExpireTime < todayTime && userInfo.integral <= 0) {
-        res.status(400).json((0, utils_1.httpBody)(-1, [], 'GPT4为超级会员使用或用积分'));
-        return;
-    }
 
-    // 获取历史消息
-    const historyMessageCount = await models_1.configModel.getConfig('history_message_count');
-    const getMessagesData = await models_1.messageModel.getMessages({ page: 0, page_size: Number(historyMessageCount) }, {
-        parent_message_id: parentMessageId
-    });
-    const historyMessage = getMessagesData.rows
-        .map((item) => {
-        return {
-            role: item.toJSON().role,
-            content: item.toJSON().content
-        };
-    })
-        .reverse();
-    const messages = [
-        ...historyMessage,
-        {
-            role: 'user',
-            content: prompt
-        }
-    ];
-
-    // 获取AI模型token信息
-    const tokenInfo = await models_1.tokenModel.getOneToken({ model: options.model });
+    // 获取coze模型token信息
+    const tokenInfo = await models_1.tokenModel.getOneToken({ model: options.model }); 
     if (!tokenInfo || !tokenInfo.id) {
         res.status(500).json((0, utils_1.httpBody)(-1, '未配置对应AI模型'));
         return;
@@ -361,105 +335,114 @@ router.post('/chat/completions', async (req, res, next) => {
     });
     console.log('tokenInfo', tokenInfo);
 
-    // 发送请求到AI服务
-    const chat = await (0, node_fetch_1.default)(`${tokenInfo.host}/v1/chat/completions`, {
-        method: 'POST',
-        body: JSON.stringify({
-            ...options,
-            messages,
-            stream: true
-        }),
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenInfo.key}`
+    let conversation_id = "";
+
+    // 创建会话，存储会话ID
+    // 如果parentMessageId是空，则需要创建会话 TBD:看前端代码，把初始conversation_id设为空，conversation_id由接口返回
+    if(parentMessageId != null) {
+        const conversation = await fetch(`${tokenInfo.host}/v1/conversation/create`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${tokenInfo.key}`,
+            },
+        });
+        if(conversation.status == 200) {
+            const conversationData = await conversation.json();
+            conversation_id = conversationData.data.id;
+            console.log("conversation_id is null, now it's ", conversation_id);
+            //TBD: 持久化conversation_id
+        }else {
+            console.error("conversation_id is null, but create conversation failed with code", conversation.status);
         }
-    });
+    }else{
+        conversation_id = parentMessageId;
+        console.log("conversation_id is not null, it's ", conversation_id);
+    }
 
-    // 准备消息对象
-    const assistantMessageId = (0, utils_1.generateNowflakeId)(2)();
-    const userMessageId = (0, utils_1.generateNowflakeId)(1)();
-    const userMessageInfo = {
-        user_id,
-        id: userMessageId,
-        role: 'user',
-        content: prompt,
-        parent_message_id: parentMessageId,
-        ...options
-    };
-    const assistantInfo = {
-        user_id,
-        id: assistantMessageId,
-        role: 'assistant',
-        content: '',
-        parent_message_id: parentMessageId,
-        ...options
-    };
+    const { Readable } = require('stream');
+    console.log("tokeninfo.key:", tokenInfo.key);
+    console.log("tokeninfo.host:", tokenInfo.host);
+    
+    // 发送AI chat请求
+    const chat = await handleCozeAPI({
+        messages: req.body.prompt,
+        model: options.model,
+        user: userInfo.id,
+        stream: true,
+        conversation_id: conversation_id,
+    }, tokenInfo.key, tokenInfo.host);
+    //chat.conversation_id = conversation_id;
 
-    // 处理流式响应
-    if (chat.status === 200 && chat.headers.get('content-type')?.includes('text/event-stream')) {
+    console.log("chat", chat);
+    if (chat.status === 200) {     // 当前只处理流式响应，原本应该在这个if中判断是否为流式
         const ai3_ratio = (await models_1.configModel.getConfig('ai3_ratio')) || 0;
         const ai4_ratio = (await models_1.configModel.getConfig('ai4_ratio')) || 0;
         const aiRatioInfo = {
             ai3_ratio,
             ai4_ratio
         };
+        console.log("aiRatioInfo", aiRatioInfo);
         
         res.setHeader('Content-Type', 'text/event-stream;charset=utf-8');
         const jsonStream = new stream_1.Transform({
             objectMode: true,
             transform(chunk, encoding, callback) {
                 const bufferString = Buffer.from(chunk).toString();
-                const listString = (0, utils_1.handleChatData)(bufferString, assistantMessageId);
+                console.log("bufferString", bufferString);
+                const listString = (0, utils_1.handleChatData)(bufferString, conversation_id); //调试到这里了，handleChatData函数有问题
+                console.log("listString", listString);
                 const list = listString.split('\n\n');
                 for (let i = 0; i < list.length; i++) {
                     if (list[i]) {
                         const jsonData = JSON.parse(list[i]);
-                        if (jsonData.segment === 'stop') {
-                            // 对话结束，保存消息并处理积分扣除
-                            models_1.messageModel.addMessages([userMessageInfo, assistantInfo]);
-                            if ((options.model.includes('gpt-4') && svipExpireTime < todayTime) ||
-                                (!options.model.includes('gpt-4') && vipExpireTime < todayTime)) {
-                                // 计算token使用量并扣除积分
-                                const usageInfo = new gpt_tokens_1.GPTTokens({
-                                    model: options.model,
-                                    messages: [
-                                        ...messages,
-                                        {
-                                            role: 'assistant',
-                                            content: assistantInfo.content
-                                        }
-                                    ]
-                                });
-                                const tokens = usageInfo.usedTokens;
-                                let ratio = Number(aiRatioInfo.ai3_ratio);
-                                if (options.model.indexOf('gpt-4') !== -1) { //如果包含gpt-4
-                                    ratio = Number(aiRatioInfo.ai4_ratio);
-                                }
-                                const integral = ratio ? Math.ceil(tokens / ratio) : 0;
-                                models_1.userModel.updataUserVIP({
-                                    id: user_id,
-                                    type: 'integral',
-                                    value: integral,
-                                    operate: 'decrement'
-                                });
-                                const turnoverId = (0, utils_1.generateNowflakeId)(1)();
-                                models_1.turnoverModel.addTurnover({
-                                    id: turnoverId,
-                                    user_id,
-                                    describe: `对话(${options.model})`,
-                                    value: `-${integral}积分`
-                                });
-                            }
-                            // 记录用户行为
-                            models_1.actionModel.addAction({
-                                user_id,
-                                id: (0, utils_1.generateNowflakeId)(23)(),
-                                ip,
-                                type: 'chat',
-                                describe: `对话(${options.model})`
-                            });
-                        }
-                        else {
+                        // if (jsonData.segment === 'stop') {
+                        //     // 对话结束，保存消息并处理积分扣除
+                        //     models_1.messageModel.addMessages([userMessageInfo, assistantInfo]);
+                        //     if ((options.model.includes('gpt-4') && svipExpireTime < todayTime) ||
+                        //         (!options.model.includes('gpt-4') && vipExpireTime < todayTime)) {
+                        //         // 计算token使用量并扣除积分
+                        //         const usageInfo = new gpt_tokens_1.GPTTokens({
+                        //             model: options.model,
+                        //             messages: [
+                        //                 ...messages,
+                        //                 {
+                        //                     role: 'assistant',
+                        //                     content: assistantInfo.content
+                        //                 }
+                        //             ]
+                        //         });
+                        //         const tokens = usageInfo.usedTokens;
+                        //         let ratio = Number(aiRatioInfo.ai3_ratio);
+                        //         if (options.model.indexOf('gpt-4') !== -1) { //如果包含gpt-4
+                        //             ratio = Number(aiRatioInfo.ai4_ratio);
+                        //         }
+                        //         const integral = ratio ? Math.ceil(tokens / ratio) : 0;
+                        //         models_1.userModel.updataUserVIP({
+                        //             id: user_id,
+                        //             type: 'integral',
+                        //             value: integral,
+                        //             operate: 'decrement'
+                        //         });
+                        //         const turnoverId = (0, utils_1.generateNowflakeId)(1)();
+                        //         models_1.turnoverModel.addTurnover({
+                        //             id: turnoverId,
+                        //             user_id,
+                        //             describe: `对话(${options.model})`,
+                        //             value: `-${integral}积分`
+                        //         });
+                        //     }
+                        //     // 记录用户行为
+                        //     models_1.actionModel.addAction({
+                        //         user_id,
+                        //         id: (0, utils_1.generateNowflakeId)(23)(),
+                        //         ip,
+                        //         type: 'chat',
+                        //         describe: `对话(${options.model})`
+                        //     });
+                        // }
+                        //else 
+                        {
                             // 累积AI回复内容
                             assistantInfo.content += jsonData.content;
                         }
@@ -468,14 +451,80 @@ router.post('/chat/completions', async (req, res, next) => {
                 callback(null, listString);
             }
         });
-        chat.body?.pipe(jsonStream).pipe(res);
-        return;
-    }
 
-    // 非流式响应处理
-    const data = await chat.json();
-    res.status(chat.status).json(data);
+        // Convert ReadableStream to Node.js Readable stream
+        const nodeReadable = Readable.from(chat.body);
+
+        nodeReadable.pipe(jsonStream).pipe(res);
+
+        let buffer = "";
+        nodeReadable.on('data', (chunk) => {
+            buffer += chunk.toString();
+            let lines = buffer.split('\n');
+            //console.log("lines:", lines);
+        });
+        nodeReadable.on('end', () => {
+            //console.log("buffer:", buffer);
+        });
+
+    }
+    return;
 });
+// 新增兼容性处理函数
+async function handleCozeAPI(data, authHeader, host) {
+    console.log("authHeader:", authHeader);
+    const messages = data.messages;
+    if (!messages) {
+        console.error("Invalid or missing messages array");
+        throw new Error("Invalid request: messages is missing");
+    }    
+    const model = data.model;
+    const user = data.user;
+    const conversation_id = data.conversation_id;
+    const stream = data.stream !== undefined ? data.stream : false;
+    const bot_id = "7425621268382564393";   //hard code here, need to be moved to config
+    const additional_messages = [];
+    additional_messages.push({
+        role: "user",
+        content: messages,
+        content_type: "text"
+    });
+    
+    const requestBody = {
+      stream: stream,
+      user_id: user.toString(),
+      bot_id: bot_id,
+      additional_messages:additional_messages
+    };
+    const coze_api_url = `${host}/v3/chat`;
+    const url = new URL(coze_api_url)
+    url.searchParams.append('conversation_id', conversation_id);
+
+    const requestDetails = {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authHeader}`,
+        },
+        body: JSON.stringify(requestBody),
+    };
+    //console.log("requestDetails:", requestDetails);
+
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authHeader}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+    if (!resp.ok) {
+      throw new Error(`Error: ${resp.status} ${resp.statusText}`);
+    }
+    //console.log("resp:", resp);
+    return resp;
+  }
+
 // 获取商品
 router.get('/product', async (req, res, next) => {
     const { page, page_size } = (0, utils_1.pagingData)({

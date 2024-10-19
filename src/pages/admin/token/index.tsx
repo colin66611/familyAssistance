@@ -6,6 +6,10 @@ import { Button, Form, Tag, message } from 'antd';
 import { useRef, useState } from 'react';
 
 const modelsAll = [
+    {
+        label: 'coze',
+        value: 'coze'
+    },
 	{
 		label: 'gpt-4',
 		value: 'gpt-4'
