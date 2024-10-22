@@ -360,6 +360,25 @@ router.post('/chat/completions', async (req, res, next) => {
         console.log("conversation_id is not null, it's ", conversation_id);
     }
 
+    const assistantMessageId = (0, utils_1.generateNowflakeId)(2)();
+    const userMessageId = (0, utils_1.generateNowflakeId)(1)();
+    const userMessageInfo = {
+        user_id,
+        id: userMessageId,
+        role: 'user',
+        content: prompt,
+        parent_message_id: parentMessageId,
+        ...options
+    };
+    const assistantInfo = {
+        user_id,
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '',
+        parent_message_id: parentMessageId,
+        ...options
+    };
+
     const { Readable } = require('stream');
     console.log("tokeninfo.key:", tokenInfo.key);
     console.log("tokeninfo.host:", tokenInfo.host);
@@ -385,70 +404,25 @@ router.post('/chat/completions', async (req, res, next) => {
         console.log("aiRatioInfo", aiRatioInfo);
         
         res.setHeader('Content-Type', 'text/event-stream;charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders(); // 立即发送头部
         const jsonStream = new stream_1.Transform({
             objectMode: true,
             transform(chunk, encoding, callback) {
                 const bufferString = Buffer.from(chunk).toString();
-                console.log("bufferString", bufferString);
-                const listString = (0, utils_1.handleChatData)(bufferString, conversation_id); //调试到这里了，handleChatData函数有问题
-                console.log("listString", listString);
-                const list = listString.split('\n\n');
-                for (let i = 0; i < list.length; i++) {
-                    if (list[i]) {
-                        const jsonData = JSON.parse(list[i]);
-                        // if (jsonData.segment === 'stop') {
-                        //     // 对话结束，保存消息并处理积分扣除
-                        //     models_1.messageModel.addMessages([userMessageInfo, assistantInfo]);
-                        //     if ((options.model.includes('gpt-4') && svipExpireTime < todayTime) ||
-                        //         (!options.model.includes('gpt-4') && vipExpireTime < todayTime)) {
-                        //         // 计算token使用量并扣除积分
-                        //         const usageInfo = new gpt_tokens_1.GPTTokens({
-                        //             model: options.model,
-                        //             messages: [
-                        //                 ...messages,
-                        //                 {
-                        //                     role: 'assistant',
-                        //                     content: assistantInfo.content
-                        //                 }
-                        //             ]
-                        //         });
-                        //         const tokens = usageInfo.usedTokens;
-                        //         let ratio = Number(aiRatioInfo.ai3_ratio);
-                        //         if (options.model.indexOf('gpt-4') !== -1) { //如果包含gpt-4
-                        //             ratio = Number(aiRatioInfo.ai4_ratio);
-                        //         }
-                        //         const integral = ratio ? Math.ceil(tokens / ratio) : 0;
-                        //         models_1.userModel.updataUserVIP({
-                        //             id: user_id,
-                        //             type: 'integral',
-                        //             value: integral,
-                        //             operate: 'decrement'
-                        //         });
-                        //         const turnoverId = (0, utils_1.generateNowflakeId)(1)();
-                        //         models_1.turnoverModel.addTurnover({
-                        //             id: turnoverId,
-                        //             user_id,
-                        //             describe: `对话(${options.model})`,
-                        //             value: `-${integral}积分`
-                        //         });
-                        //     }
-                        //     // 记录用户行为
-                        //     models_1.actionModel.addAction({
-                        //         user_id,
-                        //         id: (0, utils_1.generateNowflakeId)(23)(),
-                        //         ip,
-                        //         type: 'chat',
-                        //         describe: `对话(${options.model})`
-                        //     });
-                        // }
-                        //else 
-                        {
-                            // 累积AI回复内容
-                            assistantInfo.content += jsonData.content;
-                        }
-                    }
-                }
-                callback(null, listString);
+                
+                const processedData = (0, utils_1.handleChatData)(bufferString, conversation_id);//看起来的确这个函数有bug，导致formattedData的内容为多行内容
+                
+                // 确保 processedData 是一个字符串
+                const dataString = typeof processedData === 'string' ? processedData : JSON.stringify(processedData);
+
+                // 格式化为事件流格式
+                const formattedData = `data: ${dataString}\n\n`;
+                console.log("Formatted data:", formattedData);
+
+                callback(null, formattedData);
+
             }
         });
 
@@ -457,17 +431,30 @@ router.post('/chat/completions', async (req, res, next) => {
 
         nodeReadable.pipe(jsonStream).pipe(res);
 
-        let buffer = "";
-        nodeReadable.on('data', (chunk) => {
-            buffer += chunk.toString();
-            let lines = buffer.split('\n');
-            //console.log("lines:", lines);
+        // 在 jsonStream 上添加事件监听器
+        jsonStream.on('data', (chunk) => {
+            //console.log("Data processed by jsonStream:", chunk.toString());
         });
-        nodeReadable.on('end', () => {
-            //console.log("buffer:", buffer);
+        
+        jsonStream.on('end', () => {
+            console.log("jsonStream processing ended");
+        });
+
+        res.on('data', (chunk) => {
+            //console.log("Sending chunk to client:", chunk.toString());
+        });
+          
+        res.on('end', () => {
+            console.log("Finished sending response to client");
+        });
+
+        // 如果 res 确实是一个可写流，我们可以监听它的 'finish' 事件
+        res.on('finish', () => {
+            console.log("Response finished sending");
         });
 
     }
+    
     return;
 });
 // 新增兼容性处理函数
