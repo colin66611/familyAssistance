@@ -412,13 +412,13 @@ router.post('/chat/completions', async (req, res, next) => {
             transform(chunk, encoding, callback) {
                 const bufferString = Buffer.from(chunk).toString();
                 
-                const processedData = (0, utils_1.handleChatData)(bufferString, conversation_id);//看起来的确这个函数有bug，导致formattedData的内容为多行内容
+                const processedData = (0, utils_1.handleChatData)(bufferString, conversation_id);
                 
                 // 确保 processedData 是一个字符串
                 const dataString = typeof processedData === 'string' ? processedData : JSON.stringify(processedData);
 
                 // 格式化为事件流格式
-                const formattedData = `data: ${dataString}\n\n`;
+                const formattedData = `${dataString}\n\n`;
                 console.log("Formatted data:", formattedData);
 
                 callback(null, formattedData);

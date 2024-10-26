@@ -22,12 +22,18 @@ function handleOpenChatData(chunk, parentMessageId) {
                     
                     switch (event) {
                         case 'conversation.chat.created':
+                            contents.push(JSON.stringify({
+                                ...parsedPayload,
+                                segment: 'start',
+                                parentMessageId
+                            }) + '\n');
+                            break;
                         case 'conversation.chat.in_progress':
                             contents.push(JSON.stringify({
                                 ...parsedPayload,
                                 segment: 'start',
                                 parentMessageId
-                            }));
+                            }) + '\n');
                             break;
                         case 'conversation.message.delta':
                             if (parsedPayload.type === 'answer') {
@@ -37,20 +43,26 @@ function handleOpenChatData(chunk, parentMessageId) {
                                         role: parsedPayload.role,
                                         segment: 'text',
                                         dateTime: parsedPayload.chat_id.split('-').slice(0, 3).join('-'),
-                                        content: parsedPayload.content,
+                                        content: parsedPayload.content || '',
                                         parentMessageId,
                                         conversationId: parsedPayload.conversation_id,
                                         botId: parsedPayload.bot_id,
                                         contentType: parsedPayload.content_type,
                                         chatId: parsedPayload.chat_id
                                     };
-                                    contents.push(JSON.stringify(currentMessage));
+                                    console.log("currentMessage.content is empty, its:", currentMessage.content);
                                 } else {
-                                    currentMessage.content += parsedPayload.content;
+                                    if(parsedPayload.content) {
+                                        currentMessage.content = parsedPayload.content;
+                                        console.log("currentMessage.content is not empty, its:", currentMessage.content);
+                                    }
+                                    else{
+                                        console.warn('Received empty content for message delta:', parsedPayload);
+                                    }
                                     currentMessage.segment = 'text';
                                 }
-                                
                             }
+                            contents.push(JSON.stringify(currentMessage) + '\n');
                             break;
                         case 'conversation.message.completed':
                             if (currentMessage) {
@@ -69,7 +81,6 @@ function handleOpenChatData(chunk, parentMessageId) {
                                 role: 'system',
                                 segment: 'stop',
                                 dateTime: new Date().toISOString().split('T')[0],
-                                content: 'Chat completed',
                                 parentMessageId,
                                 conversationId: parsedPayload.conversation_id,
                                 botId: parsedPayload.bot_id,
@@ -82,7 +93,6 @@ function handleOpenChatData(chunk, parentMessageId) {
                                 role: 'system',
                                 segment: 'stop',
                                 dateTime: new Date().toISOString().split('T')[0],
-                                content: '[DONE]',
                                 parentMessageId
                             }) + '\n\n');
                             break;

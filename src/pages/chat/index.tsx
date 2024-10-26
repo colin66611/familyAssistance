@@ -100,11 +100,13 @@ function ChatPage() {
       }
     })
       .then((res) => {
+        console.log('Response received:', res);
         return res
       })
       .catch((error) => {
         // 终止： AbortError
-        console.log(error.name)
+        console.error("Error in postChatCompletions:", error);
+        throw error;
       })
 
     if (!(response instanceof Response)) {
@@ -135,41 +137,46 @@ ${JSON.stringify(response, null, 4)}
       }
       // 将获取到的数据片段显示在屏幕上
       const text = new TextDecoder('utf-8').decode(value)
-      const texts = handleChatData(text)
-      for (let i = 0; i < texts.length; i++) {
-        const { dateTime, role, content, segment } = texts[i]
-        allContent += content ? content : ''
-        if (segment === 'stop') {
-          setFetchController(null)
-          setChatDataInfo(selectChatId, userMessageId, {
-            status: 'pass'
-          })
-          setChatDataInfo(selectChatId, assistantMessageId, {
-            text: allContent,
-            dateTime,
-            status: 'pass'
-          })
-          break
-        }
+      const parsedData = handleChatData(text)
 
-        if (segment === 'start') {
-          setChatDataInfo(selectChatId, userMessageId, {
-            status: 'pass'
-          })
-          setChatDataInfo(selectChatId, assistantMessageId, {
-            text: allContent,
-            dateTime,
-            status: 'loading',
-            role,
-            requestOptions
-          })
-        }
-        if (segment === 'text') {
-          setChatDataInfo(selectChatId, assistantMessageId, {
-            text: allContent,
-            dateTime,
-            status: 'pass'
-          })
+      for (const item of parsedData) {
+        const { id, role, segment, dateTime, content, parentMessageId, conversationId, botId, contentType, chatId } = item
+        
+        allContent += content || ''
+        console.log('item = ', item);
+
+        switch (segment) {
+          case 'stop':
+            setFetchController(null)
+            setChatDataInfo(selectChatId, userMessageId, { status: 'pass' })
+            setChatDataInfo(selectChatId, assistantMessageId, {
+              text: allContent,
+              dateTime,
+              status: 'pass'
+            })
+            return // Exit the function as this is the end of the stream
+
+          case 'start':
+            setChatDataInfo(selectChatId, userMessageId, { status: 'pass' })
+            setChatDataInfo(selectChatId, assistantMessageId, {
+              text: allContent,
+              dateTime,
+              status: 'loading',
+              role,
+              requestOptions
+            })
+            break
+
+          case 'text':
+            setChatDataInfo(selectChatId, assistantMessageId, {
+              text: allContent,
+              dateTime,
+              status: 'pass'
+            })
+            break
+
+          default:
+            console.warn(`Unknown segment type: ${segment}`)
         }
       }
       scrollToBottomIfAtBottom()
